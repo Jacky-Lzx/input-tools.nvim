@@ -366,3 +366,6 @@ opening only Vim-mode input does not load the native renderer. Window profiles a
 merged once per effective style. Cursor movement preserves buffer text and
 highlights and refreshes only the affected window. Blink repositioning is queued
 only while its already-loaded command-line menu is visible.
+
+See [performance measurements](docs/performance.md) for the reproducible isolated
+RPC-UI benchmark (`python3 scripts/benchmark.py`) and its timing limits.
