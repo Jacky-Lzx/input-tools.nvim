@@ -115,6 +115,23 @@ tools.input({}, function(value)
   returned = value
 end)
 eq(nil, returned)
+local presentation
+vim.fn.input = function(opts)
+  captured = opts
+  presentation = require("input-tools.input").context({ {}, 0, "", opts.prompt, 0, 1 })
+  return "result"
+end
+tools.input({ title = "Project", title_pos = "right" }, function(value)
+  returned = value
+end)
+eq("result", returned)
+eq("Project: ", captured.prompt)
+eq(nil, captured.title)
+eq("Project", presentation.title)
+eq("right", presentation.title_pos)
+eq(nil, require("input-tools.input").context({ {}, 0, "", captured.prompt, 0, 1 }))
+assert(not pcall(tools.input, { title_pos = "bottom" }, function() end))
+assert(not pcall(tools.input, { title = {} }, function() end))
 vim.fn.input, vim.ui.input = native_input, global_input
 
 -- Lifecycle ownership, validation before replacement and no hard dependency.

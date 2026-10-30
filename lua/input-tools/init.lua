@@ -36,20 +36,7 @@ end
 ---@param opts? input_tools.InputOptions
 ---@param on_confirm fun(value: string?)
 function M.input(opts, on_confirm)
-  assert(opts == nil or type(opts) == "table", "input options must be a table")
-  assert(type(on_confirm) == "function", "on_confirm must be a function")
-  local native = { cancelreturn = vim.NIL }
-  for _, key in ipairs({ "prompt", "default", "completion", "highlight" }) do
-    if opts and opts[key] ~= nil then
-      native[key] = opts[key]
-    end
-  end
-  local ok, value = pcall(vim.fn.input, native)
-  if not ok or value == vim.NIL then
-    on_confirm(nil)
-  else
-    on_confirm(value)
-  end
+  return require("input-tools.input").input(opts, on_confirm)
 end
 
 ---Join only an installed, configured notification-tools instance; never load it.

@@ -35,6 +35,7 @@ function M.event(s, event, args, popupmenu)
       content = M.text(args[1]),
       chunks = vim.deepcopy(args[1]),
       prompt_hl = args[7],
+      input = require("input-tools.input").context(args),
       interactive = not vim.in_fast_event() and vim.fn.mode(1):sub(1, 1) == "r",
       pos = args[2],
       firstc = args[3],
@@ -87,7 +88,7 @@ function M.event(s, event, args, popupmenu)
   return true, changed
 end
 
-function M.command(s)
+function M.command(s, keep_prompt)
   local current, highest
   for level, entry in pairs(s.levels) do
     if not highest or level > highest then
@@ -112,7 +113,9 @@ function M.command(s)
   end
   local prefix, content, pos = "", "", 0
   if current then
-    prefix = current.firstc .. current.prompt .. string.rep(" ", current.indent)
+    local prompt = current.input and current.input.hide_prompt and not keep_prompt and ""
+      or current.prompt
+    prefix = current.firstc .. prompt .. string.rep(" ", current.indent)
     content, pos = current.content, current.pos
     if current.special then
       local tail = content:sub(pos + 1)
@@ -154,10 +157,11 @@ function M.command(s)
     prefix = prefix,
     content = content,
     editable = current ~= nil,
+    input = current and current.input,
     kind = (not current or current.interactive or s.prompt ~= nil) and "confirm"
       or (current.firstc == "/" or current.firstc == "?") and "search"
       or current.firstc == "=" and "expression"
-      or current.prompt ~= "" and "input"
+      or (current.input or current.prompt ~= "") and "input"
       or "command",
   }
 end

@@ -107,6 +107,72 @@ def main():
         assert lua("return vim.g.adapter_value") == "__cancel"
         lua("vim.ui.input=saved_input")
 
+        # Per-call titles live in the upper frame and do not alter editable text.
+        lua("input.setup({window={row=3}})")
+        title_columns = []
+        for align in ("left", "center", "right"):
+            keys(":lua input.input({title='Project',title_pos='" + align + "',default='foo'}, function(v) vim.g.title_value=v or '__cancel' end)<CR>")
+            layout = lua("return input.get_layout()")
+            box = lua("return vim.api.nvim_win_get_config(input.get_window())")
+            assert box['title'][0][0] == 'Project' and box['title_pos'] == align, box
+            assert lua("return vim.fn.getcmdline()") == 'foo'
+            assert lua("return vim.api.nvim_buf_get_lines(input.get_layout().buf,0,-1,false)") == ['foo ']
+            frame = ''.join(c[0] for c in ui.grid[layout['row']])
+            title_columns.append(frame.index('Project'))
+            keys("<CR>")
+            assert lua("return vim.g.title_value") == 'foo'
+        assert title_columns[0] < title_columns[1] < title_columns[2], title_columns
+
+        # Inline prompts remain independent, and profiles supply default alignment.
+        lua("input.setup({window={row=3},profiles={input={title='Base',title_pos='right'}}})")
+        keys(":lua input.input({title='Project',prompt='Name: ',default='foo'},function() end)<CR>")
+        box = lua("return vim.api.nvim_win_get_config(input.get_window())")
+        assert box['title'][0][0] == 'Project' and box['title_pos'] == 'right', box
+        assert lua("return vim.api.nvim_buf_get_lines(input.get_layout().buf,0,-1,false)") == ['Name: foo ']
+        keys("<Esc>")
+        keys(":lua input.input({title=false,default='foo'},function() end)<CR>")
+        assert lua("return vim.api.nvim_win_get_config(input.get_window()).title") is None
+        assert lua("return input.get_layout().kind") == 'input'
+        keys("<Esc>")
+        lua("input.setup({window={row=3,max_width=20}})")
+        keys(":lua input.input({title='项目设置：很长的标题',default='foo'},function() end)<CR>")
+        ui.request("nvim_ui_try_resize", [22, 8])
+        lua("vim.wait(35)")
+        assert lua("return input.is_enabled() and vim.fn.getcmdline()=='foo'")
+        keys("<Esc>")
+        ui.request("nvim_ui_try_resize", [100, 32])
+        lua("input.setup({window={row=3}})")
+
+        # Nested expressions and successive callbacks restore independent titles.
+        keys(":lua input.input({title='Outer',title_pos='left'},function(v) vim.g.title_value=v or '__cancel' end)<CR>")
+        keys("<C-r>=")
+        assert lua("return vim.api.nvim_win_get_config(input.get_window()).title") is None
+        keys("1+1<CR>")
+        box = lua("return vim.api.nvim_win_get_config(input.get_window())")
+        assert box['title'][0][0] == 'Outer' and box['title_pos'] == 'left', box
+        assert lua("return vim.fn.getcmdline()") == '2'
+        keys("<Esc>")
+        assert lua("return vim.g.title_value") == '__cancel'
+        keys(":lua input.input({title='First'},function(v) if v then input.input({title='Second',title_pos='right',default='next'},function(r) vim.g.title_value=r or '__cancel' end) end end)<CR>")
+        keys("first<CR>")
+        box = lua("return vim.api.nvim_win_get_config(input.get_window())")
+        assert box['title'][0][0] == 'Second' and box['title_pos'] == 'right', box
+        keys("<Esc>")
+        keys(":echo")
+        assert lua("return vim.api.nvim_win_get_config(input.get_window()).title") is None
+        keys("<Esc>")
+
+        # Title-only input also has a readable label without a border/renderer.
+        lua("input.setup({window={row=3,border='none'}})")
+        keys(":lua input.input({title='Project',default='foo'},function() end)<CR>")
+        assert 'Project: foo' in text(), text()
+        keys("<Esc>")
+        lua("input.disable()")
+        keys(":lua input.input({title='Project',default='foo'},function() end)<CR>")
+        assert 'Project: foo' in text(), text()
+        keys("<Esc>")
+        lua("input.setup({window={row=3}})")
+
         keys(":function! InputToolsExample()<CR>")
         assert "function! InputToolsExample()" in text(), text()
         keys("return 7<CR>endfunction<CR>")

@@ -6,7 +6,8 @@
 ---@field min_width? integer Minimum requested content width, limited by the screen.
 ---@field max_width? integer Maximum content width in display cells.
 ---@field col? integer Horizontal offset from center, clamped to the screen.
----@field title? string|false Optional centered border title.
+---@field title? string|false Optional upper border title.
+---@field title_pos? 'left'|'center'|'right' Title alignment; defaults to center.
 ---@field max_height? integer Maximum context/prompt rows.
 ---@field bottom? integer Bottom margin in display rows.
 ---@field row? integer|false Zero-based top offset; false explicitly uses the bottom margin.
@@ -38,7 +39,9 @@
 ---@field popupmenu? input_tools.PopupmenuConfig
 
 ---@class input_tools.InputOptions
----@field prompt? string Input prompt.
+---@field title? string|false Per-call upper border title; false suppresses the profile title.
+---@field title_pos? 'left'|'center'|'right' Per-call alignment; defaults to the input profile's title_pos.
+---@field prompt? string Inline input prompt; omit for a title-only input.
 ---@field default? string Initial value.
 ---@field completion? string Native input() completion specification.
 ---@field highlight? string|function Native input() highlight callback.

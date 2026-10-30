@@ -4,7 +4,9 @@ local opts = {
   notifications = true,
   return_prompt = "show",
   window = { border = "rounded", max_width = 70, row = 3 },
-  profiles = { search = { width = 0.4, min_width = 20, col = -2, title = "Search" } },
+  profiles = {
+    search = { width = 0.4, min_width = 20, col = -2, title = "Search", title_pos = "right" },
+  },
   popupmenu = { enabled = false },
 }
 ---@type input_tools.API
@@ -17,11 +19,14 @@ local enabled = api.is_enabled()
 local layout = api.get_layout()
 ---@type integer|nil
 local window = api.get_window()
-api.input({ prompt = "Name: ", default = "foo", scope = "cursor" }, function(value)
-  if value then
-    assert(type(value) == "string")
+api.input(
+  { title = "Project", title_pos = "center", default = "foo", scope = "cursor" },
+  function(value)
+    if value then
+      assert(type(value) == "string")
+    end
   end
-end)
+)
 api.disable()
 api.enable()
 api.toggle()

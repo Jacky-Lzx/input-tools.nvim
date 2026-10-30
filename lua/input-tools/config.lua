@@ -11,6 +11,7 @@ M.defaults = {
     bottom = 1,
     col = 0,
     title = false,
+    title_pos = "center",
     winblend = 0,
     zindex = 250,
   },
@@ -58,6 +59,10 @@ local function window(opts)
   assert(
     type(opts.title) == "string" or opts.title == false,
     "window.title must be a string or false"
+  )
+  assert(
+    vim.tbl_contains({ "left", "center", "right" }, opts.title_pos),
+    "window.title_pos must be left, center or right"
   )
   local width = opts.width
   assert(

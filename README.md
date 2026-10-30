@@ -163,7 +163,7 @@ treated as interactive too; this keeps `inputlist()` choices visible while the
 editor waits for a number.
 
 Float colors use `InputToolsNormal`, `InputToolsBorder`, `InputToolsPrompt`,
-`InputToolsMenu`, `InputToolsSelection` and `InputToolsStatus`. They link to native
+`InputToolsMenu`, `InputToolsSelection`, `InputToolsTitle` and `InputToolsStatus`. They link to native
 theme groups; override them with `nvim_set_hl`, including from a `ColorScheme`
 autocmd. The UI preserves native highlighted chunks in command input, multiline context
 and interactive prompts, including `input()` highlight callbacks. It does not
@@ -184,17 +184,19 @@ require("input-tools").setup({
   window = { row = 3 },
   profiles = {
     search = { width = 0.4, min_width = 24, max_width = 60, title = "Search" },
-    input = { width = 50, title = "Input" },
+    input = { width = 50, title = "Input", title_pos = "center" },
   },
 })
 ```
 
 `width` is a positive cell count or a fraction in `(0, 1]` of editor columns.
 It is bounded by `min_width`, `max_width` and available screen space. Without
-`width`, the existing `max_width` behavior is preserved. `row=false` explicitly restores bottom placement in a profile even if the base
-window has a top offset. `col` is a signed offset
-from horizontal center. `title` is a centered border title (`false` by default);
-borderless windows omit it. Both position and size clamp on small screens.
+`width`, the existing `max_width` behavior is preserved. `row=false` explicitly
+restores bottom placement in a profile even if the base window has a top offset.
+`col` is a signed offset from horizontal center. `title` is an upper border title
+(`false` by default). `title_pos` selects `"left"`, `"center"` (default) or
+`"right"`; borderless windows omit configured titles. Both position and size clamp
+on small screens.
 
 ## API and lifecycle
 
@@ -225,7 +227,7 @@ preserves both the active instance and the configuration used by `enable()`.
 
 `input.input(opts, on_confirm)` uses Neovim's native input engine directly,
 allowing one tool to opt into this renderer even when another plugin owns
-`vim.ui.input`. It accepts `prompt`, `default`, `completion` and `highlight`;
+`vim.ui.input`. It accepts `title`, `title_pos`, `prompt`, `default`, `completion` and `highlight`;
 provider-specific fields such as `scope` are ignored. The `profiles.input`
 layout applies. It never replaces `vim.ui.input` or enables a disabled renderer;
 when disabled, the same call falls back to native command-line display.
@@ -233,12 +235,20 @@ when disabled, the same call falls back to native command-line display.
 Any consumer can call the same public API directly:
 
 ```lua
-require("input-tools").input({ prompt = "Project name: ", default = "demo" }, function(value)
+require("input-tools").input({ title = "Project name", title_pos = "center", default = "demo" }, function(value)
   if value ~= nil then
     -- Use the accepted value (including an empty string).
   end
 end)
 ```
+
+`title` appears in the upper border. `title_pos` is `"left"`, `"center"` or
+`"right"`, defaulting to `profiles.input.title_pos` / `window.title_pos` (center).
+These options apply only to this call and override the input profile. `title=false`
+suppresses a configured title. `prompt` remains an independent inline label; omit
+it for a title-only input with only the value on the editable line. When there is
+no border or the renderer is disabled, title-only inputs use an inline label.
+Titles do not leak to later calls or nested command-line expressions.
 
 Input-tools owns the input API and renderer; consumers own the action performed
 with the value. Lsp-tools uses this general API for rename automatically when it

@@ -13,7 +13,14 @@ end
 local opts = config.resolve({
   window = { row = 3 },
   profiles = {
-    search = { width = 0.4, max_width = 100, min_width = 20, col = -4, title = "Search" },
+    search = {
+      width = 0.4,
+      max_width = 100,
+      min_width = 20,
+      col = -4,
+      title = "Search",
+      title_pos = "right",
+    },
     input = { width = 30, title = "Rename" },
   },
 })
@@ -27,6 +34,7 @@ for _, firstc in ipairs({ "/", "?" }) do
   eq(48, win.width)
   eq(31, win.col)
   eq("Search", win.title[1][1])
+  eq("right", win.title_pos)
 end
 view.render(state(":", "Rename: "), opts)
 eq("input", model.command(state(":", "Rename: ")).kind)

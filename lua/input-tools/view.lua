@@ -36,6 +36,7 @@ function M.highlights()
     Menu = "Pmenu",
     Selection = "PmenuSel",
     Status = "ModeMsg",
+    Title = "FloatTitle",
     Scrollbar = "PmenuSbar",
     Thumb = "PmenuThumb",
   }) do
@@ -82,7 +83,7 @@ local function surface(name, lines, geometry, config)
     vim.wo[win].sidescrolloff = 2
     vim.wo[win].winhighlight = "Normal:InputTools"
       .. (name == "menu" and "Menu" or "Normal")
-      .. ",FloatBorder:InputToolsBorder"
+      .. ",FloatBorder:InputToolsBorder,FloatTitle:InputToolsTitle"
   elseif not vim.deep_equal(item.geometry, geometry) then
     local updated = vim.tbl_extend("force", {}, geometry)
     updated.title = geometry.title or "" -- Clear a title inherited from another input profile.
@@ -122,8 +123,18 @@ function M.render(s, config)
   local model = require("input-tools.model")
   local command = model.command(s)
   local window = require("input-tools.config").window(config, command and command.kind or "command")
+  if command and command.input then
+    for _, key in ipairs({ "title", "title_pos" }) do
+      if command.input[key] ~= nil then
+        window[key] = command.input[key]
+      end
+    end
+  end
   config = vim.tbl_extend("force", {}, config, { window = window })
   local edge = (config.window.border == "none" or config.window.border == "") and 0 or 2
+  if edge == 0 and command and command.input and command.input.hide_prompt then
+    command = model.command(s, true) -- A borderless window needs the inline label.
+  end
   local columns, rows = math.max(1, vim.o.columns), math.max(1, vim.o.lines - vim.o.cmdheight)
   local anchor
   if command then
@@ -156,7 +167,7 @@ function M.render(s, config)
     )
     local box = geometry(row, col, width, height, window.border, window.zindex)
     if edge > 0 and window.title ~= false and window.title ~= "" then
-      box.title, box.title_pos = window.title, "center"
+      box.title, box.title_pos = window.title, window.title_pos
     end
     local item = surface("command", lines, box, config)
     local cursor_row = math.min(#lines, math.max(1, command.row - first + 1))

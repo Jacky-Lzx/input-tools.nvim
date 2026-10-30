@@ -43,7 +43,8 @@ window overrides for :, / and ?, input(), = and interactive prompts respectively
 window.width is a positive cell count or fraction in (0,1] of editor columns;
 min_width/max_width bound it, with screen space taking precedence. Without width,
 max_width retains its previous behavior. window.col offsets horizontal center.
-window.title is a centered border string, or false (default); no border omits it.
+window.title is an upper border string, or false (default). title_pos selects
+left, center (default), or right. No border omits configured window titles.
 Example: profiles = { search = { width = 0.4, title = "Search" } }.
 
 BLINK.CMP                                             *input-tools-blink*
@@ -78,7 +79,7 @@ Old unnamed numbered-choice messages in r/rm prompt states are also interactive;
 they stay visible while inputlist() waits for the user's number.
 
 Highlight groups: InputToolsNormal, InputToolsBorder, InputToolsPrompt,
-InputToolsMenu, InputToolsSelection, InputToolsStatus. Colors link to native
+InputToolsMenu, InputToolsSelection, InputToolsTitle, InputToolsStatus. Colors link to native
 theme groups and may be overridden using nvim_set_hl/ColorScheme autocmds.
 Native input/context/prompt chunk colors are preserved, including input()
 highlight callbacks. On old protocols, a guarded LuaJIT integer-only bridge
@@ -122,11 +123,17 @@ status()                 enabled, notifications, window, blink and last_error.
 The command remains available when disabled. Completion lists its subcommands.
 get_window()             Visible input window ID, or nil; does not load UI.
 get_layout()             Independent visible layout snapshot, or nil.
-input(opts?, callback)   General native input API for any consumer. Accepts prompt/default/
+input(opts?, callback)   General native input API for any consumer. Accepts title/
+                         title_pos/prompt/default/
                          completion/highlight; ignores provider-specific fields.
                          Callback receives nil on cancel, "" for accepted empty.
                          Does not replace vim.ui.input or enable the renderer.
                          Uses profiles.input while active, native UI if disabled.
+                         title overrides the upper border for this call only;
+                         title_pos=left/center/right overrides profile alignment.
+                         title=false suppresses a configured title. Omit prompt
+                         for a title-only input; supply it for an inline label too.
+                         Borderless/disabled title-only input uses an inline label.
                          Consumers call this directly; lsp-tools rename resolves
                          this API automatically, without a configuration bridge.
 sync_notifications()     Retry the handoff after an already loaded producer setup.
