@@ -26,6 +26,7 @@ local function position(value)
 end
 
 function M.highlights()
+  require("input-tools.text").reset()
   for name, target in pairs({
     Normal = "NormalFloat",
     Border = "FloatBorder",
@@ -158,14 +159,17 @@ function M.render(s, config)
     vim.wo[item.win].wrap, vim.wo[item.win].linebreak = not command.editable, not command.editable
     local cursor_col = math.min(command.col, #lines[cursor_row] - 1)
     api.nvim_win_set_cursor(item.win, { cursor_row, math.max(0, cursor_col) })
-    if command.prefix ~= "" and cursor_row == 1 then
-      api.nvim_buf_set_extmark(
-        item.buf,
-        ns,
-        0,
-        0,
-        { end_col = math.min(#command.prefix, #lines[1]), hl_group = "InputToolsPrompt" }
-      )
+    for _, mark in ipairs(command.highlights) do
+      local r = mark.row - first
+      if r >= 0 and r < #lines then
+        api.nvim_buf_set_extmark(
+          item.buf,
+          ns,
+          r,
+          mark.col,
+          { end_col = mark.stop, hl_group = mark.hl }
+        )
+      end
     end
     anchor = {
       row = row,

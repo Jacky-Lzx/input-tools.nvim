@@ -33,6 +33,8 @@ function M.event(s, event, args, popupmenu)
   if event == "cmdline_show" then
     changed = put(s.levels, args[6], {
       content = M.text(args[1]),
+      chunks = vim.deepcopy(args[1]),
+      prompt_hl = args[7],
       pos = args[2],
       firstc = args[3],
       prompt = args[4] or "",
@@ -57,11 +59,13 @@ function M.event(s, event, args, popupmenu)
   elseif event == "cmdline_block_hide" then
     changed = put(s, "block", {})
   elseif event == "msg_show" and M.is_prompt(args[1]) then
-    local text = M.text(args[2])
+    local chunks = vim.deepcopy(args[2])
+    local text = M.text(chunks)
     if args[5] and s.prompt then
       text = s.prompt.text .. text
+      chunks = vim.list_extend(vim.deepcopy(s.prompt.chunks), chunks)
     end
-    changed = put(s, "prompt", { kind = args[1], text = text })
+    changed = put(s, "prompt", { kind = args[1], text = text, chunks = chunks })
   elseif statuses[event] then
     changed = put(s.statuses, event, M.text(args[1]))
   elseif popupmenu and event == "popupmenu_show" then
@@ -92,9 +96,18 @@ function M.command(s)
   if not current and not s.prompt then
     return
   end
-  local lines = {}
+  local lines, highlights = {}, {}
+  local rich = require("input-tools.text")
+  local function append(chunks)
+    local added, marks = rich.lines(chunks)
+    for _, mark in ipairs(marks) do
+      mark.row = mark.row + #lines
+      highlights[#highlights + 1] = mark
+    end
+    vim.list_extend(lines, added)
+  end
   for _, line in ipairs(s.block) do
-    vim.list_extend(lines, vim.split(M.text(line), "\n", { plain = true }))
+    append(line)
   end
   local prefix, content, pos = "", "", 0
   if current then
@@ -111,20 +124,30 @@ function M.command(s)
   if
     s.prompt and (not current or not (prefix .. content):find(vim.trim(s.prompt.text), 1, true))
   then
-    vim.list_extend(lines, vim.split(s.prompt.text, "\n", { plain = true }))
+    append(s.prompt.chunks)
   end
   local before = prefix .. content:sub(1, pos)
   local cursor_lines = vim.split(before, "\n", { plain = true })
   local row = #lines + #cursor_lines
   local col = #cursor_lines[#cursor_lines]
   if current then
-    vim.list_extend(lines, vim.split(prefix .. content .. " ", "\n", { plain = true }))
+    local chunks = {
+      {
+        0,
+        prefix,
+        current.prompt_hl and current.prompt_hl > 0 and current.prompt_hl or "InputToolsPrompt",
+      },
+    }
+    vim.list_extend(chunks, rich.special(current.chunks, current.pos, current.special))
+    chunks[#chunks + 1] = { 0, " " }
+    append(chunks)
   else
     row, col = #lines, #lines[#lines]
     lines[#lines] = lines[#lines] .. " "
   end
   return {
     lines = lines,
+    highlights = highlights,
     row = row,
     col = col,
     prefix = prefix,

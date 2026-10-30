@@ -73,6 +73,10 @@ they stay visible while inputlist() waits for the user's number.
 Highlight groups: InputToolsNormal, InputToolsBorder, InputToolsPrompt,
 InputToolsMenu, InputToolsSelection, InputToolsStatus. Colors link to native
 theme groups and may be overridden using nvim_set_hl/ColorScheme autocmds.
+Native input/context/prompt chunk colors are preserved, including input()
+highlight callbacks. On old protocols, a guarded LuaJIT integer-only bridge
+resolves matching groups; unavailable/unmatched attributes use the base color.
+No C structures are read. Modern protocols use supplied group IDs directly.
 
 NOTIFICATIONS                                  *input-tools-notifications*
 >

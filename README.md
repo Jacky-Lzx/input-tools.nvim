@@ -154,8 +154,12 @@ editor waits for a number.
 Float colors use `InputToolsNormal`, `InputToolsBorder`, `InputToolsPrompt`,
 `InputToolsMenu`, `InputToolsSelection` and `InputToolsStatus`. They link to native
 theme groups; override them with `nvim_set_hl`, including from a `ColorScheme`
-autocmd. The UI uses plain text and prompt accents; it does not add a syntax
-parser or a completion source. Its terminal cursor uses Neovim's experimental
+autocmd. The UI preserves native highlighted chunks in command input, multiline context
+and interactive prompts, including `input()` highlight callbacks. It does not
+add a syntax parser or a completion source. New protocols provide group IDs
+directly. On older Neovim, a guarded LuaJIT integer-only bridge resolves matching
+highlight groups; if that symbol is unavailable or no group matches, the text
+remains readable with the base color. No C structure layouts are assumed. Its terminal cursor uses Neovim's experimental
 `nvim__redraw` cursor support, available in the supported versions.
 
 ### Input-specific layouts

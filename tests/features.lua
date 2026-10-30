@@ -44,3 +44,34 @@ local box = vim.api.nvim_win_get_config(view.cursor.win)
 assert(box.col >= 0 and box.col + box.width + 2 <= 18)
 view.close()
 print("features: per-kind profiles, fractional widths, titles and small-screen clamps passed")
+
+-- Chunk colors use group IDs, never reinterpret screen attribute IDs as groups.
+local rich = require("input-tools.text")
+vim.api.nvim_set_hl(0, "InputToolsTestRed", { fg = "#ff1234" })
+local red = vim.api.nvim_get_hl_id_by_name("InputToolsTestRed")
+local chunks = { { 0, "你", red }, { 0, "好tail", red } }
+local edited = rich.special(chunks, 3, { char = "^", shift = false })
+local lines, marks = rich.lines(edited)
+eq({ "你^tail" }, lines)
+eq(3, marks[2].col)
+eq(4, marks[3].col)
+eq(red, marks[3].hl)
+local colored = state(":")
+model.event(colored, "cmdline_show", { chunks, 3, ":", "", 0, 1 }, true)
+model.event(colored, "cmdline_block_show", { { { { 0, "context", red } } } }, true)
+local cmd = model.command(colored)
+eq(2, cmd.highlights[#cmd.highlights].row)
+eq(4, cmd.highlights[#cmd.highlights].col)
+vim.o.columns, vim.o.lines = 100, 32
+view.render(colored, config.resolve())
+local buf = vim.api.nvim_win_get_buf(view.cursor.win)
+local extmarks = vim.api.nvim_buf_get_extmarks(
+  buf,
+  vim.api.nvim_create_namespace("input-tools.view"),
+  0,
+  -1,
+  { details = true }
+)
+assert(#extmarks >= 3)
+view.close()
+print("highlights: multiline context, Unicode ranges and special-character edits passed")

@@ -70,6 +70,21 @@ def main():
         assert "input-question:" in text(), text()
         keys("answer<CR>")
         assert lua("return vim.g.input_result") == "answer"
+        # Native input() highlight callbacks must survive rendering, including
+        # the legacy attribute-only protocol on Neovim 0.10.
+        lua("vim.api.nvim_set_hl(0, 'InputToolsNativeColor', {fg='#ff1234', bold=true}); "
+            "_G.InputToolsColor = function(s) return {{0, #s, 'InputToolsNativeColor'}} end")
+        keys(":lua vim.g.colored_input = vim.fn.input({prompt='Color: ',highlight='v:lua.InputToolsColor'})<CR>")
+        keys("你好")
+        def colored_cells():
+            return [cell for row in ui.grid for cell in row if cell[0] == '你' and ui.attrs.get(cell[1], {}).get('foreground') == 0xff1234]
+        assert colored_cells(), "native highlighted Unicode input lost its colors"
+        lua("vim.api.nvim_set_hl(0, 'InputToolsNativeColor', {fg='#12ff34'}); vim.cmd('doautocmd ColorScheme')")
+        lua("vim.wait(35)")
+        assert any(cell[0] == '你' and ui.attrs.get(cell[1], {}).get('foreground') == 0x12ff34 for row in ui.grid for cell in row)
+        keys("<CR>")
+        assert lua("return vim.g.colored_input") == "你好"
+
         keys(":function! InputToolsExample()<CR>")
         assert "function! InputToolsExample()" in text(), text()
         keys("return 7<CR>endfunction<CR>")
