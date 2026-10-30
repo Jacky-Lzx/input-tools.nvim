@@ -39,6 +39,20 @@ Prompts go through that engine; the plugin draws them without answering confirma
 
 Use `:checkhealth input-tools` to inspect the current owners.
 
+### blink.cmp
+
+Command-line completion menus follow the input window automatically. Input-tools
+publishes the `vim.g.ui_cmdline_pos` screen-position convention consumed by
+Blink's default `completion.menu.cmdline_position`; no Blink dependency, patch
+or early loading is needed. Keep Blink's command-line menu enabled as usual.
+Custom `cmdline_position` callbacks must honor this position to follow the UI.
+The position updates with layout/scrolling and is released when input closes;
+teardown restores the previous value only while input-tools still owns it.
+When layout changes, an already-loaded Blink menu is repositioned on the next
+event-loop turn. This guarded adapter uses Blink's internal menu positioning
+function because it has no public reposition-only API; it never loads or patches
+Blink and leaves completion sources, selection and keymaps with Blink.
+
 ## Pair with notification-tools
 
 Enable native-message capture in notification-tools:
@@ -149,6 +163,7 @@ does not capture ordinary output, implement a message history, or manage LSP UI.
 ```sh
 sh tests/run.sh
 NOTIFICATION_TOOLS_ROOT=../notification-tools.nvim sh tests/run.sh
+INPUT_TOOLS_BLINK_ROOT=/path/to/blink.cmp sh tests/run.sh
 python3 scripts/check_types.py
 ```
 

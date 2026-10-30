@@ -2,6 +2,28 @@ local M = {}
 local api = vim.api
 local ns = api.nvim_create_namespace("input-tools.view")
 local surfaces = {}
+local previous_position, owned_position
+
+local function position(value)
+  local current = vim.g.ui_cmdline_pos
+  if value then
+    if vim.deep_equal(current, value) and vim.deep_equal(owned_position, value) then
+      return
+    end
+    if not owned_position or not vim.deep_equal(current, owned_position) then
+      previous_position = vim.deepcopy(current)
+    end
+    owned_position = value
+    vim.g.ui_cmdline_pos = value
+    require("input-tools.blink").position_changed()
+  else
+    if owned_position and vim.deep_equal(current, owned_position) then
+      vim.g.ui_cmdline_pos = previous_position
+      require("input-tools.blink").position_changed()
+    end
+    owned_position, previous_position = nil, nil
+  end
+end
 
 function M.highlights()
   for name, target in pairs({
@@ -27,6 +49,7 @@ local function close(name)
 end
 
 function M.close()
+  position(nil)
   for _, name in ipairs({ "command", "menu", "status" }) do
     close(name)
   end
@@ -228,9 +251,26 @@ function M.render(s, config)
   else
     close("status")
   end
+  local function publish_position()
+    if anchor and command.editable then
+      local saved = api.nvim_win_call(anchor.item.win, vim.fn.winsaveview)
+      local prefix = vim.split(command.prefix, "\n", { plain = true })
+      -- Shared UI convention: 1-based screen row, 0-based column before native
+      -- command text (Blink adds its 1-based completion start_col).
+      position({
+        anchor.row + edge / 2 + M.cursor.row - saved.topline + 1,
+        anchor.col + display_width(prefix[#prefix]) - saved.leftcol - 1,
+      })
+    else
+      position(nil)
+    end
+  end
+  -- Consumers can reposition in WinResized/WinScrolled during this redraw.
+  publish_position()
   vim.cmd.redraw()
   if M.cursor and api.nvim__redraw then
     pcall(api.nvim__redraw, { win = M.cursor.win, cursor = true, flush = true })
   end
+  publish_position() -- Include any horizontal scrolling performed by redraw.
 end
 return M

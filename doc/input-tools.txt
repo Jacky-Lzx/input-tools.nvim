@@ -31,6 +31,17 @@ are drawn here. Neovim still owns selection/acceptance keys and completion
 sources. For command-line popup completion, use wildoptions=pum and wildmode=full.
 The plugin does not change these options or provide syntax parsing.
 
+BLINK.CMP                                             *input-tools-blink*
+
+Blink's default completion.menu.cmdline_position reads vim.g.ui_cmdline_pos.
+Input-tools publishes this shared screen position while native input is visible,
+including layout/scroll offsets, and releases it when input closes. No Blink
+dependency or early loading is required. Custom Blink positioning callbacks
+should honor this value. Teardown restores a previous value only if still owned.
+Layout changes coalesce a refresh of an already-loaded Blink menu on the next
+event-loop turn. This guarded call uses Blink's internal menu positioning method;
+no Blink modules are loaded or patched, and completion behavior stays with Blink.
+
 The default return_prompt=auto acknowledges only hit-enter prompts. Confirm,
 numbered choice and substitution prompts always wait for the user's answer.
 return_prompt=show displays the hit-enter prompt until answered. Externalized

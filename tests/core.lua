@@ -50,12 +50,15 @@ eq("-- INSERT --  2d", model.status(s))
 
 -- Real float geometry, Unicode cursor columns and a scrolling completion list.
 local view = require("input-tools.view")
+local original_position = { 42, 9 }
+vim.g.ui_cmdline_pos = original_position
 local config = require("input-tools.config").resolve()
 view.highlights()
 s = model.new()
 model.event(s, "cmdline_show", { { { 0, string.rep("你", 90) } }, 270, ":", "", 0, 1 }, true)
 view.render(s, config)
 eq(271, vim.api.nvim_win_get_cursor(view.cursor.win)[2])
+assert(not vim.deep_equal(original_position, vim.g.ui_cmdline_pos))
 local focus = vim.api.nvim_get_current_win()
 eq(1, #vim.tbl_filter(function(win)
   return vim.bo[vim.api.nvim_win_get_buf(win)].filetype == "input-tools-command"
@@ -81,6 +84,12 @@ end
 vim.o.columns, vim.o.lines = 18, 6
 view.render(s, config)
 view.close()
+eq(original_position, vim.g.ui_cmdline_pos)
+view.render(s, config)
+vim.g.ui_cmdline_pos = { 88, 12 }
+view.close()
+eq({ 88, 12 }, vim.g.ui_cmdline_pos) -- A later owner must survive teardown.
+vim.g.ui_cmdline_pos = nil
 
 -- Lifecycle ownership, validation before replacement and no hard dependency.
 local attach, detach = vim.ui_attach, vim.ui_detach
@@ -95,6 +104,7 @@ tools.setup()
 eq({ ext_cmdline = true, ext_popupmenu = true }, attached)
 assert(tools.is_enabled())
 assert(not package.loaded["notification-tools"], "standalone setup must not load notifications")
+assert(not package.loaded["blink.cmp"], "UI setup must not eagerly load Blink")
 assert(not pcall(tools.setup, { window = { max_width = 0 } }))
 assert(tools.is_enabled(), "invalid reconfiguration must preserve the working renderer")
 assert(not pcall(tools.setup, { window = { row = -1 } }))
