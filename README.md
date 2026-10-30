@@ -227,7 +227,7 @@ preserves both the active instance and the configuration used by `enable()`.
 
 `input.input(opts, on_confirm)` uses Neovim's native input engine directly,
 allowing one tool to opt into this renderer even when another plugin owns
-`vim.ui.input`. It accepts `position`, `title`, `title_pos`, `prompt`, `default`, `completion` and
+`vim.ui.input`. It accepts `width`, `position`, `title`, `title_pos`, `prompt`, `default`, `completion` and
 `highlight`;
 provider-specific fields such as `scope` are ignored. The `profiles.input`
 layout applies. It never replaces `vim.ui.input` or enables a disabled renderer;
@@ -238,6 +238,7 @@ Any consumer can call the same public API directly:
 ```lua
 require("input-tools").input({
   position = "cursor",
+  width = 32,
   title = "Project name",
   title_pos = "center",
   default = "demo",
@@ -260,6 +261,11 @@ configured editor layout is used. There is no polling timer.
 layout. Cursor positioning overrides those coordinates while retaining the input
 profile's size, border, title and blending. Native completion menus and Blink's
 position adapter use the same final frame geometry.
+
+`width` optionally overrides the content width for this call (display cells or
+an editor-width fraction in `(0, 1]`), within the profile's `min_width`/`max_width`
+and screen limits. Omit it to keep the configured width. Long values scroll
+horizontally without truncating the value passed to the callback.
 
 `title` appears in the upper border. `title_pos` is `"left"`, `"center"` or
 `"right"`, defaulting to `profiles.input.title_pos` / `window.title_pos` (center).

@@ -39,6 +39,7 @@
 ---@field popupmenu? input_tools.PopupmenuConfig
 
 ---@class input_tools.InputOptions
+---@field width? number Per-call content width in cells or a fraction in (0,1], bounded by the profile and screen.
 ---@field position? 'editor'|'cursor' Use the configured editor layout (default), or anchor near the caller's buffer cursor.
 ---@field title? string|false Per-call upper border title; false suppresses the profile title.
 ---@field title_pos? 'left'|'center'|'right' Per-call alignment; defaults to the input profile's title_pos.

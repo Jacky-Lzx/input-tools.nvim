@@ -124,7 +124,7 @@ function M.render(s, config)
   local command = model.command(s)
   local window = require("input-tools.config").window(config, command and command.kind or "command")
   if command and command.input then
-    for _, key in ipairs({ "title", "title_pos" }) do
+    for _, key in ipairs({ "title", "title_pos", "width" }) do
       if command.input[key] ~= nil then
         window[key] = command.input[key]
       end

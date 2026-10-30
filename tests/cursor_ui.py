@@ -41,8 +41,9 @@ def main():
             "vim.api.nvim_buf_set_lines(0,0,-1,false,vim.fn['repeat']({string.rep('x',100)},60)); "
             "vim.api.nvim_win_set_cursor(0,{8,20}); vim.fn.winrestview({topline=1,leftcol=0}); source_win=vim.api.nvim_get_current_win(); vim.cmd.redraw()")
         point = source_point()
-        open_input()
+        open_input(",width=32")
         before = check_near(point)
+        assert before["width"] == 32
         keys('<C-u>新名称')
         after = check_near(point)
         assert [before['row'], before['col']] == [after['row'], after['col']], (before, after)
@@ -50,6 +51,7 @@ def main():
         assert lua('return vim.g.cursor_value') == '新名称'
         keys(':echo')
         assert lua('return input.get_layout().row') == 3, 'cursor option leaked to the command line'
+        assert lua('return input.get_layout().width') == 30, 'per-call width leaked to the command line'
         keys('<Esc>')
 
         # A split, tabs and wide characters must use screen cells rather than

@@ -121,15 +121,22 @@ vim.fn.input = function(opts)
   presentation = require("input-tools.input").context({ {}, 0, "", opts.prompt, 0, 1 })
   return "result"
 end
-tools.input({ title = "Project", title_pos = "right", position = "cursor" }, function(value)
-  returned = value
-end)
+tools.input(
+  { title = "Project", title_pos = "right", position = "cursor", width = 32 },
+  function(value)
+    returned = value
+  end
+)
 eq("result", returned)
 eq("Project: ", captured.prompt)
 eq(nil, captured.title)
 eq("Project", presentation.title)
 eq("right", presentation.title_pos)
 eq("cursor", presentation.position)
+eq(32, presentation.width)
+eq(nil, captured.width)
+assert(not pcall(tools.input, { width = 0 }, function() end))
+assert(not pcall(tools.input, { width = math.huge }, function() end))
 eq(vim.api.nvim_get_current_win(), presentation.anchor.win)
 eq(nil, captured.position)
 assert(not pcall(tools.input, { position = "bottom" }, function() end))

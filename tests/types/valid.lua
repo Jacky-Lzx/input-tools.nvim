@@ -23,6 +23,7 @@ api.input({
   title = "Project",
   title_pos = "center",
   position = "cursor",
+  width = 32,
   default = "foo",
   scope = "cursor",
 }, function(value)

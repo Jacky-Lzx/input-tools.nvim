@@ -123,7 +123,8 @@ status()                 enabled, notifications, window, blink and last_error.
 The command remains available when disabled. Completion lists its subcommands.
 get_window()             Visible input window ID, or nil; does not load UI.
 get_layout()             Independent visible layout snapshot, or nil.
-input(opts?, callback)   General native input API for any consumer. Accepts position/
+input(opts?, callback)   General native input API for any consumer. Accepts width/
+                         position/
                          title/
                          title_pos/prompt/default/
                          completion/highlight; ignores provider-specific fields.
@@ -137,6 +138,9 @@ input(opts?, callback)   General native input API for any consumer. Accepts posi
                          Hidden/invalid sources fall back to the editor layout.
                          position=editor (default) uses configured row/col.
                          Size, border and other profile styling still apply.
+                         width optionally overrides content width for one call:
+                         positive cells or a fraction in (0,1], bounded by profile
+                         min_width/max_width and screen space. Long text scrolls.
                          title overrides the upper border for this call only;
                          title_pos=left/center/right overrides profile alignment.
                          title=false suppresses a configured title. Omit prompt

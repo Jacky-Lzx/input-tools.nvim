@@ -13,6 +13,7 @@ function M.context(args)
   then
     request.level = args[6]
     return {
+      width = request.width,
       position = request.position,
       anchor = request.anchor,
       title = request.title,
@@ -38,6 +39,15 @@ function M.input(opts, on_confirm)
     opts.position == nil or vim.tbl_contains({ "editor", "cursor" }, opts.position),
     "position must be editor or cursor"
   )
+  local width = opts.width
+  assert(
+    width == nil
+      or type(width) == "number"
+        and width > 0
+        and width < math.huge
+        and (width <= 1 or width == math.floor(width)),
+    "width must be a positive integer or a fraction in (0, 1]"
+  )
   local native = { cancelreturn = vim.NIL }
   for _, key in ipairs({ "prompt", "default", "completion", "highlight" }) do
     if opts[key] ~= nil then
@@ -51,6 +61,7 @@ function M.input(opts, on_confirm)
     native.prompt = opts.title .. ": " -- Readable if the renderer is disabled/fails.
   end
   local request = {
+    width = width,
     position = opts.position,
     anchor = opts.position == "cursor" and require("input-tools.position").capture() or nil,
     title = opts.title,
