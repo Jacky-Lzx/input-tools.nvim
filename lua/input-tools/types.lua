@@ -37,6 +37,14 @@
 ---@field profiles? input_tools.Profiles Overrides merged over window for each input kind.
 ---@field popupmenu? input_tools.PopupmenuConfig
 
+---@class input_tools.BlinkStatus
+---@field loaded boolean Whether Blink is already loaded.
+---@field visible boolean Whether its completion menu is visible.
+---@field adapter boolean Whether the outer-frame callback is active.
+
 ---@class input_tools.Status
 ---@field enabled boolean Whether input-tools owns its UI subscription.
 ---@field notifications boolean Whether it has an active notification-tools message handle.
+---@field window? integer Visible input window.
+---@field blink input_tools.BlinkStatus
+---@field last_error? string Last renderer failure; cleared by successful setup.

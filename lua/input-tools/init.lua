@@ -3,6 +3,7 @@ local M = {}
 local config = require("input-tools.config")
 local model = require("input-tools.model")
 local session
+local last_config, last_error
 local ns = vim.api.nvim_create_namespace("input-tools")
 
 ---@return boolean
@@ -52,6 +53,9 @@ function M.status()
   return {
     enabled = session ~= nil,
     notifications = session ~= nil and session.messages ~= nil and session.messages:is_active(),
+    window = M.get_window(),
+    blink = require("input-tools.blink").status(),
+    last_error = last_error,
   }
 end
 
@@ -97,11 +101,54 @@ local function render(s, defer)
   s.rendering = false
   if not ok then
     -- A broken renderer must never leave the editor with an invisible cmdline.
+    last_error = tostring(err)
     M.teardown()
     vim.schedule(function()
       vim.notify("input-tools disabled: " .. tostring(err), vim.log.levels.ERROR)
     end)
   end
+end
+
+---Enable using the last successful configuration (or defaults).
+function M.enable()
+  if not session then
+    M.setup(last_config)
+  end
+  return M
+end
+
+---Release UI ownership while retaining configuration for enable().
+function M.disable()
+  M.teardown()
+end
+
+function M.toggle()
+  if session then
+    M.disable()
+  else
+    M.enable()
+  end
+end
+
+local function commands()
+  local actions = { "enable", "disable", "toggle", "status" }
+  vim.api.nvim_create_user_command("InputTools", function(command)
+    if command.args == "status" then
+      vim.api.nvim_echo({ { vim.inspect(M.status()) } }, false, {})
+    elseif vim.tbl_contains(actions, command.args) then
+      M[command.args]()
+    else
+      error("InputTools: expected enable, disable, toggle or status")
+    end
+  end, {
+    nargs = 1,
+    desc = "Control input-tools and inspect its UI ownership",
+    complete = function(lead)
+      return vim.tbl_filter(function(action)
+        return action:sub(1, #lead) == lead
+      end, actions)
+    end,
+  })
 end
 
 ---Attach command-line, prompt and optional completion UI without changing keymaps.
@@ -180,6 +227,8 @@ function M.setup(opts)
     M.teardown()
     error(sync_err)
   end
+  last_config, last_error = vim.deepcopy(resolved), nil
+  commands()
   return M
 end
 return M

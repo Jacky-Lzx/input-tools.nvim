@@ -2,6 +2,7 @@
 -- before our layout. Refresh only its already-loaded menu after layout settles.
 local M = {}
 local pending = false
+local adapters = setmetatable({}, { __mode = "k" })
 
 local function layout()
   local input = package.loaded["input-tools"]
@@ -30,7 +31,7 @@ end
 function M.menu_config(opts)
   opts = opts or {}
   local original_direction, original_position = opts.direction_priority, opts.cmdline_position
-  return {
+  local callbacks = {
     direction_priority = function(...)
       local box = vim.api.nvim_get_mode().mode == "c" and layout()
       if box then
@@ -90,6 +91,26 @@ function M.menu_config(opts)
       end
       return { vim.o.lines - math.max(1, vim.o.cmdheight), 0 }
     end,
+  }
+  adapters[callbacks.cmdline_position] = true
+  return callbacks
+end
+
+---Inspect only already-loaded Blink modules; never activate completion.
+function M.status()
+  local config = package.loaded["blink.cmp.config"]
+  local menu = package.loaded["blink.cmp.completion.windows.menu"]
+  local win = type(menu) == "table" and menu.win
+  local visible = false
+  if win and type(win.is_open) == "function" then
+    local ok, result = pcall(win.is_open, win)
+    visible = ok and result == true
+  end
+  local options = type(config) == "table" and config.completion and config.completion.menu
+  return {
+    loaded = package.loaded["blink.cmp"] ~= nil,
+    visible = visible,
+    adapter = type(options) == "table" and adapters[options.cmdline_position] == true,
   }
 end
 

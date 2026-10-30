@@ -200,12 +200,21 @@ borderless windows omit it. Both position and size clamp on small screens.
 ```lua
 local input = require("input-tools")
 input.setup(opts)          -- Validate, replace the old instance, then attach.
+input.enable()            -- Resume the last successful config; no-op if active.
+input.disable()           -- Restore native input, retaining config for enable.
+input.toggle()
 input.is_enabled()         -- Whether our UI subscription is active.
-input.status()             -- { enabled = boolean, notifications = boolean }
+input.status()             -- Ownership, window, Blink state and last render error.
 input.get_window()         -- Visible input window ID, or nil; does not load UI.
 input.sync_notifications() -- Retry the optional handoff after producer setup.
 input.teardown()           -- Release messages, UI subscription, floats/autocmds.
 ```
+
+After setup, `:InputTools enable`, `disable`, `toggle` and `status` provide the
+same controls. The command remains available while disabled. `status()` and
+`:checkhealth input-tools` inspect already-loaded Blink without activating it.
+A successful setup clears the recorded renderer error. Invalid reconfiguration
+preserves both the active instance and the configuration used by `enable()`.
 
 No idle timer runs. UI events update the native input state and redraw the
 non-focusable floats; repeated identical events do not schedule redraw loops.

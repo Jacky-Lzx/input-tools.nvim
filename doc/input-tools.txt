@@ -110,7 +110,15 @@ API                                                      *input-tools-api*
 setup(opts?)             Validate, replace the old instance, attach and join.
 teardown()               Release message handle, UI callback, floats/autocmds.
 is_enabled()             True while our UI subscription is active.
-status()                 { enabled=boolean, notifications=boolean }.
+enable()                 Resume last successful config; no-op if already enabled.
+disable()                Restore native input, retaining config for enable().
+toggle()                 Enable or disable.
+status()                 enabled, notifications, window, blink and last_error.
+                         blink = { loaded, visible, adapter }; no eager loading.
+                         Successful setup clears last_error.
+
+:InputTools enable|disable|toggle|status provides these controls after setup.
+The command remains available when disabled. Completion lists its subcommands.
 get_window()             Visible input window ID, or nil; does not load UI.
 sync_notifications()     Retry the handoff after an already loaded producer setup.
 

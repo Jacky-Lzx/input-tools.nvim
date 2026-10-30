@@ -15,6 +15,9 @@ local status = api.status()
 local enabled = api.is_enabled()
 ---@type integer|nil
 local window = api.get_window()
+api.disable()
+api.enable()
+api.toggle()
 api.sync_notifications()
 api.teardown()
 return { status = status, enabled = enabled, window = window }

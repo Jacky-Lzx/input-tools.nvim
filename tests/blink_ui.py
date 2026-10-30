@@ -36,6 +36,7 @@ def main():
         keys("he")
         palette, menu = window("input-tools-command"), window("blink-cmp-menu")
         assert palette and menu, (palette, menu)
+        assert lua("return input.status().blink.adapter and input.status().blink.visible")
         assert palette["row"] == 3
         assert menu["row"] == palette["row"] + palette["height"] + 2, (palette, menu)
         assert menu["col"] == palette["col"], (palette, menu)

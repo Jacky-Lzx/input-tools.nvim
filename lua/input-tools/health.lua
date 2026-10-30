@@ -17,6 +17,21 @@ function M.check()
   else
     vim.health.info("No message handoff; native messages stay with their current owner")
   end
+  if status.blink.loaded then
+    if status.blink.adapter then
+      vim.health.ok("Blink outer-frame adapter configured")
+    else
+      vim.health.info("Blink loaded; default/shared command-line position is used")
+    end
+  else
+    vim.health.info("Blink is not loaded (no completion dependency is required)")
+  end
+  if status.last_error then
+    vim.health.warn("Last renderer error: " .. status.last_error)
+  end
+  if status.window then
+    vim.health.info("Visible input window: " .. status.window)
+  end
   if package.loaded["noice"] then
     vim.health.warn(
       "Noice is loaded; disable its command-line, message and popup-menu owners before enabling input-tools"
