@@ -221,7 +221,7 @@ same controls. The command remains available while disabled. `status()` and
 A successful setup clears the recorded renderer error. Invalid reconfiguration
 preserves both the active instance and the configuration used by `enable()`.
 
-### Explicit native input adapter
+### General input API
 
 `input.input(opts, on_confirm)` uses Neovim's native input engine directly,
 allowing one tool to opt into this renderer even when another plugin owns
@@ -230,13 +230,19 @@ provider-specific fields such as `scope` are ignored. The `profiles.input`
 layout applies. It never replaces `vim.ui.input` or enables a disabled renderer;
 when disabled, the same call falls back to native command-line display.
 
-For lsp-tools versions with a rename input provider:
+Any consumer can call the same public API directly:
 
 ```lua
-require("lsp-tools").setup({
-  rename = { input = require("input-tools").input },
-})
+require("input-tools").input({ prompt = "Project name: ", default = "demo" }, function(value)
+  if value ~= nil then
+    -- Use the accepted value (including an empty string).
+  end
+end)
 ```
+
+Input-tools owns the input API and renderer; consumers own the action performed
+with the value. Lsp-tools uses this general API for rename automatically when it
+is available, without a configuration callback or a rename-specific input API.
 
 ### Layout API and events
 

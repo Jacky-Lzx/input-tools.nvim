@@ -122,13 +122,13 @@ status()                 enabled, notifications, window, blink and last_error.
 The command remains available when disabled. Completion lists its subcommands.
 get_window()             Visible input window ID, or nil; does not load UI.
 get_layout()             Independent visible layout snapshot, or nil.
-input(opts?, callback)   Explicit native input adapter. Accepts prompt/default/
+input(opts?, callback)   General native input API for any consumer. Accepts prompt/default/
                          completion/highlight; ignores provider-specific fields.
                          Callback receives nil on cancel, "" for accepted empty.
                          Does not replace vim.ui.input or enable the renderer.
                          Uses profiles.input while active, native UI if disabled.
-                         Example lsp-tools opts:
-                         rename = { input = require("input-tools").input }.
+                         Consumers call this directly; lsp-tools rename resolves
+                         this API automatically, without a configuration bridge.
 sync_notifications()     Retry the handoff after an already loaded producer setup.
 
 Invalid configuration preserves the working instance. UI errors disable this

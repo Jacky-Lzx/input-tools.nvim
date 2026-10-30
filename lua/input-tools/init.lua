@@ -30,6 +30,7 @@ function M.get_layout()
   end
 end
 
+---General input API for consumers, independent of the action using the result.
 ---Use native input explicitly, even when another plugin owns vim.ui.input.
 ---The active input-tools renderer draws it; disabled instances use native UI.
 ---@param opts? input_tools.InputOptions
