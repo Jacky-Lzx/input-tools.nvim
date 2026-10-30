@@ -78,6 +78,23 @@ local extmarks = vim.api.nvim_buf_get_extmarks(
   { details = true }
 )
 assert(#extmarks >= 3)
+-- Replacing colored text with plain text must also remove old attributes.
+model.event(colored, "cmdline_block_hide", {}, true)
+model.event(colored, "cmdline_show", { { { 0, "plain" } }, 5, ":", "", 0, 1 }, true)
+view.render(colored, config.resolve())
+for _, mark in
+  ipairs(
+    vim.api.nvim_buf_get_extmarks(
+      buf,
+      vim.api.nvim_create_namespace("input-tools.view"),
+      0,
+      -1,
+      { details = true }
+    )
+  )
+do
+  assert(mark[4].hl_group ~= "InputToolsTestRed", "old text highlights must be removed")
+end
 view.close()
 print("highlights: multiline context, Unicode ranges and special-character edits passed")
 
@@ -87,3 +104,20 @@ local box = vim.api.nvim_win_get_config(view.cursor.win)
 assert(box.col >= 0 and box.col + box.width + 2 <= 18)
 view.close()
 print("features: per-kind profiles, fractional widths, titles and small-screen clamps passed")
+
+-- Reuse the merged profile, while respecting profile/setup/per-call changes.
+local layout = require("input-tools.layout")
+local base = layout.style(opts, "input")
+assert(base == layout.style(opts, "input"))
+local custom = layout.style(opts, "input", { title = "Custom", title_pos = "left", width = 24 })
+assert(custom == layout.style(opts, "input", { title = "Custom", title_pos = "left", width = 24 }))
+eq("Rename", opts.profiles.input.title)
+eq("Custom", custom.title)
+eq(24, custom.width)
+eq(30, layout.style(opts, "input").width)
+opts.profiles.input.width = 20
+eq(20, layout.style(opts, "input").width)
+opts.window.winblend = 10
+eq(10, layout.style(opts, "input").winblend)
+eq(0, layout.style(config.resolve(), "input").winblend)
+print("layout: cached styles, per-call isolation and configuration invalidation passed")

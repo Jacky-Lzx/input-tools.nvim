@@ -31,49 +31,13 @@ local function signature(a)
 end
 
 local function geometry(a)
-  local w = require("input-tools.config").window(a.config, "input")
-  for _, key in ipairs({ "title", "title_pos", "width" }) do
-    if a.opts[key] ~= nil then
-      w[key] = a.opts[key]
-    end
-  end
-  local edge = (w.border == "none" or w.border == "") and 0 or 2
-  local columns, rows = math.max(1, vim.o.columns), math.max(1, vim.o.lines - vim.o.cmdheight)
-  local width = w.width or w.max_width
-  if width <= 1 then
-    width = math.floor(columns * width)
-  end
-  width = math.max(1, math.min(math.max(w.min_width, width), w.max_width, columns - edge - 2))
-  local height =
-    math.max(1, math.min(api.nvim_buf_line_count(a.buf), w.max_height, rows - edge - w.bottom))
-  local row = math.max(0, rows - height - edge - w.bottom)
-  if w.row ~= nil and w.row ~= false then
-    row = math.max(0, math.min(w.row, rows - height - edge))
-  end
-  local col =
-    math.max(0, math.min(columns - width - edge, math.floor((columns - width - edge) / 2) + w.col))
-  if a.opts.position == "cursor" then
-    local r, c =
-      require("input-tools.position").place(a.source, width + edge, height + edge, columns, rows)
-    if r then
-      row, col = r, c
-    end
-  end
-  local box = {
-    relative = "editor",
-    row = row,
-    col = col,
-    width = width,
-    height = height,
-    style = "minimal",
-    focusable = true,
-    border = w.border,
-    zindex = w.zindex,
-    noautocmd = true,
-  }
-  if edge > 0 and w.title ~= false and w.title ~= "" then
-    box.title, box.title_pos = w.title, w.title_pos
-  end
+  local w = a.style
+  local box, edge = require("input-tools.layout").input(
+    w,
+    api.nvim_buf_line_count(a.buf),
+    a.opts.position == "cursor" and a.source or nil,
+    true
+  )
   return box, w, edge
 end
 
@@ -385,6 +349,7 @@ function M.open(opts, callback, config)
     source = active and active.source or require("input-tools.position").capture(),
     queued = active ~= nil,
   }
+  a.style = require("input-tools.layout").style(a.config, "input", a.opts)
   if active then
     waiting = a
     finish(active, nil)

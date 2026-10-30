@@ -63,7 +63,7 @@ function M.close()
   M.cursor, M.source_anchor, M.source_point, M.layout = nil, nil, nil, nil
 end
 
-local function surface(name, lines, geometry, config)
+local function surface(name, lines, geometry, window)
   local dirty = false
   local item = surfaces[name]
   if
@@ -96,9 +96,9 @@ local function surface(name, lines, geometry, config)
     dirty = true
   end
   item.geometry = geometry
-  if item.winblend ~= config.window.winblend then
-    vim.wo[item.win].winblend = config.window.winblend
-    item.winblend, dirty = config.window.winblend, true
+  if item.winblend ~= window.winblend then
+    vim.wo[item.win].winblend = window.winblend
+    item.winblend, dirty = window.winblend, true
   end
   if not vim.deep_equal(item.lines, lines) then
     api.nvim_buf_set_lines(item.buf, 0, -1, false, lines)
@@ -136,20 +136,7 @@ local function flush(win, dirty)
   end
 end
 
-local function geometry(row, col, width, height, border, zindex)
-  return {
-    relative = "editor",
-    row = row,
-    col = col,
-    width = width,
-    height = height,
-    style = "minimal",
-    focusable = false,
-    border = border,
-    zindex = zindex,
-    noautocmd = true,
-  }
-end
+local geometry = require("input-tools.layout").box
 
 local function display_width(value)
   return vim.fn.strdisplaywidth(value)
@@ -158,20 +145,14 @@ end
 function M.render(s, config)
   local model = require("input-tools.model")
   local command = model.command(s)
-  local window = require("input-tools.config").window(config, command and command.kind or "command")
-  if command and command.input then
-    for _, key in ipairs({ "title", "title_pos", "width" }) do
-      if command.input[key] ~= nil then
-        window[key] = command.input[key]
-      end
-    end
-  end
-  config = vim.tbl_extend("force", {}, config, { window = window })
-  local edge = (config.window.border == "none" or config.window.border == "") and 0 or 2
+  local layout_tools = require("input-tools.layout")
+  local window =
+    layout_tools.style(config, command and command.kind or "command", command and command.input)
+  local edge = (window.border == "none" or window.border == "") and 0 or 2
   if edge == 0 and command and command.input and command.input.hide_prompt then
     command = model.command(s, true) -- A borderless window needs the inline label.
   end
-  local columns, rows = math.max(1, vim.o.columns), math.max(1, vim.o.lines - vim.o.cmdheight)
+  local columns, rows = layout_tools.screen()
   local anchor
   local dirty = false
   M.source_anchor = command
@@ -181,51 +162,21 @@ function M.render(s, config)
     or nil
   M.source_point = nil
   if command then
-    local requested = window.width or window.max_width
-    if requested <= 1 then
-      requested = math.floor(columns * requested)
-    end
-    local width = math.max(
-      1,
-      math.min(math.max(window.min_width, requested), window.max_width, columns - edge - 2)
-    )
-    local count = #command.lines
-    if not command.editable then
-      count = 0
+    local box, _, point = layout_tools.input(window, function(width)
+      if command.editable then
+        return #command.lines
+      end
+      local count = 0
       for _, line in ipairs(command.lines) do
         count = count + math.max(1, math.ceil(display_width(line) / width))
       end
-    end
-    local height =
-      math.max(1, math.min(count, config.window.max_height, rows - edge - config.window.bottom))
+      return count
+    end, M.source_anchor)
+    M.source_point = point
+    local row, col, width, height = box.row, box.col, box.width, box.height
     local first = math.max(1, command.row - height + 1)
     local lines = vim.list_slice(command.lines, first, first + height - 1)
-    local row = math.max(0, rows - height - edge - config.window.bottom)
-    if config.window.row ~= nil and config.window.row ~= false then
-      row = math.max(0, math.min(config.window.row, rows - height - edge))
-    end
-    local col = math.max(
-      0,
-      math.min(columns - width - edge, math.floor((columns - width - edge) / 2) + window.col)
-    )
-    if command.input and command.input.position == "cursor" then
-      local near_row, near_col, source_point = require("input-tools.position").place(
-        command.input.anchor,
-        width + edge,
-        height + edge,
-        columns,
-        rows
-      )
-      M.source_point = source_point
-      if near_row then
-        row, col = near_row, near_col
-      end
-    end
-    local box = geometry(row, col, width, height, window.border, window.zindex)
-    if edge > 0 and window.title ~= false and window.title ~= "" then
-      box.title, box.title_pos = window.title, window.title_pos
-    end
-    local item, changed = surface("command", lines, box, config)
+    local item, changed = surface("command", lines, box, window)
     dirty = dirty or changed
     local cursor_row = math.min(#lines, math.max(1, command.row - first + 1))
     if item.wrap ~= not command.editable then
@@ -338,7 +289,7 @@ function M.render(s, config)
       "menu",
       lines,
       geometry(row, col, width, height, options.border, window.zindex + 1),
-      config
+      window
     )
     dirty = dirty or changed
     local marks = {}
@@ -378,8 +329,8 @@ function M.render(s, config)
     local _, changed = surface(
       "status",
       { status },
-      geometry(math.max(0, rows - 1), columns - width, width, 1, "none", config.window.zindex),
-      config
+      geometry(math.max(0, rows - 1), columns - width, width, 1, "none", window.zindex),
+      window
     )
     dirty = dirty or changed
   else
