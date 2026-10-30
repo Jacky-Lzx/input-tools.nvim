@@ -220,7 +220,7 @@ open_window = function(a)
   local opts = a.opts
   active = a
   local ok, err = pcall(function()
-    require("input-tools.view").highlights()
+    require("input-tools.highlights").setup()
     a.buf = api.nvim_create_buf(false, true)
     vim.bo[a.buf].buftype, vim.bo[a.buf].bufhidden = "nofile", "wipe"
     vim.bo[a.buf].swapfile, vim.bo[a.buf].undofile = false, false
@@ -307,7 +307,7 @@ open_window = function(a)
       group = a.group,
       callback = function(e)
         if e.event == "ColorScheme" then
-          require("input-tools.view").highlights()
+          require("input-tools.highlights").setup(true)
         end
         refresh(a)
       end,

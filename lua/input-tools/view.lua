@@ -26,22 +26,7 @@ local function position(value)
 end
 
 function M.highlights()
-  require("input-tools.text").reset()
-  for name, target in pairs({
-    Normal = "NormalFloat",
-    Border = "FloatBorder",
-    Text = "NormalFloat",
-    Prompt = "Question",
-    Cursor = "Cursor",
-    Menu = "Pmenu",
-    Selection = "PmenuSel",
-    Status = "ModeMsg",
-    Title = "FloatTitle",
-    Scrollbar = "PmenuSbar",
-    Thumb = "PmenuThumb",
-  }) do
-    api.nvim_set_hl(0, "InputTools" .. name, { default = true, link = target })
-  end
+  require("input-tools.highlights").setup(true)
 end
 
 local function close(name)

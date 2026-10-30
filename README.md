@@ -357,3 +357,12 @@ They do not depend on an installed Neovim configuration.
 ## License
 
 MIT
+
+## Loading and redraw cost
+
+Keep the small UI owner enabled at startup when pairing with notification-tools.
+The native renderer/text decoder and the editable-buffer renderer load on demand;
+opening only Vim-mode input does not load the native renderer. Window profiles are
+merged once per effective style. Cursor movement preserves buffer text and
+highlights and refreshes only the affected window. Blink repositioning is queued
+only while its already-loaded command-line menu is visible.

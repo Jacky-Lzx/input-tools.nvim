@@ -103,18 +103,33 @@ function M.status()
   }
 end
 
+local function visible_menu()
+  if vim.api.nvim_get_mode().mode ~= "c" then
+    return
+  end
+  local menu = package.loaded["blink.cmp.completion.windows.menu"]
+  local win = type(menu) == "table" and menu.win
+  if
+    type(menu) ~= "table"
+    or type(menu.update_position) ~= "function"
+    or not win
+    or type(win.is_open) ~= "function"
+  then
+    return
+  end
+  local ok, visible = pcall(win.is_open, win)
+  return ok and visible and menu or nil
+end
+
 function M.position_changed()
-  if pending then
+  if pending or not visible_menu() then
     return
   end
   pending = true
   vim.schedule(function()
     pending = false
-    if vim.api.nvim_get_mode().mode ~= "c" then
-      return
-    end
-    local menu = package.loaded["blink.cmp.completion.windows.menu"]
-    if type(menu) == "table" and type(menu.update_position) == "function" then
+    local menu = visible_menu()
+    if menu then
       pcall(menu.update_position)
     end
   end)
