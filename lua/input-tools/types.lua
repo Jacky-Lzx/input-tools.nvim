@@ -49,8 +49,8 @@
 ---@field title_pos? 'left'|'center'|'right' Per-call alignment; defaults to the input profile's title_pos.
 ---@field prompt? string Inline input prompt; omit for a title-only input.
 ---@field default? string Initial value.
----@field completion? string Native input() completion specification.
----@field highlight? string|function Native input() highlight callback.
+---@field completion? string Native input() completion specification; Vim mode uses completefunc/getcompletion.
+---@field highlight? string|fun(text: string): [integer, integer, string][] Highlight callback/name returning sorted byte spans {start, exclusive_end, group}.
 ---@field scope? string Accepted for vim.ui.input provider compatibility; layout follows profiles.input.
 
 ---@class input_tools.ScreenPosition

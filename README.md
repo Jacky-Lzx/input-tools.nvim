@@ -168,7 +168,7 @@ Float colors use `InputToolsNormal`, `InputToolsBorder`, `InputToolsPrompt`,
 theme groups; override them with `nvim_set_hl`, including from a `ColorScheme`
 autocmd. The UI preserves native highlighted chunks in command input, multiline context
 and interactive prompts, including `input()` highlight callbacks. It does not
-add a syntax parser or a completion source. New protocols provide group IDs
+add a syntax parser or change command-line completion sources. New protocols provide group IDs
 directly. On older Neovim, a guarded LuaJIT integer-only bridge resolves matching
 highlight groups; if that symbol is unavailable or no group matches, the text
 remains readable with the base color. No C structure layouts are assumed. Its terminal cursor uses Neovim's experimental
@@ -291,10 +291,35 @@ window keeps focus.
 Vim-mode calls return an optional handle with an idempotent `cancel()` method;
 native command-line calls return `nil`. `get_window()` and `get_layout()` expose
 the editable float too (`layout.vim_mode=true`), and lifecycle events still apply.
-The Vim buffer uses normal Neovim editing/completion rather than the native
-`input()` completion/highlight specifications; `completion` and `highlight` are
-for `vim_mode=false`. External Blink buffer completion is disabled for this
-scratch input, while normal Vim buffer-completion keys remain available.
+Both modes accept `completion` and `highlight`. In Vim mode, `completion` installs
+a buffer-local `completefunc`: use `<C-x><C-u>` for native completion. Built-in
+kinds such as `file`, `dir`, `command` and `cmdline` use `getcompletion()`;
+`custom,Function` and `customlist,Function` receive the current argument, full
+input and byte cursor position. Callback names may use `v:lua.`. No completion
+specification means external Blink suggestions remain disabled in this scratch
+input; rename therefore keeps its existing editing behavior.
+
+`highlight` receives the full value (including newlines) and returns sorted
+`{start_byte, end_byte, "Group"}` spans, using zero-based byte offsets and exclusive
+ends like native `input()`. Spans may cross lines but must respect UTF-8 character
+boundaries. Results are refreshed after text changes and colorscheme changes;
+cursor movement does not rerun the callback. A bad completion/highlight callback
+warns once per input and leaves the input usable.
+
+For Blink-powered suggestions in Vim input, add the optional source adapter in
+Blink's opts function (alongside the existing command-line menu adapter):
+
+```lua
+opts.sources = require("input-tools.blink").sources_config(opts.sources)
+```
+
+This uses Blink's built-in `complete_func` source only for `input-tools-input`.
+Other filetypes retain their sources and keymaps. It works when opening the first
+input lazy-loads Blink on `InsertEnter`. Without this adapter, declared completion
+still works through native `<C-x><C-u>`. With either menu, the first `Enter` accepts
+the completion; the next confirms the input. Input-tools retains its local Enter
+mapping after `InsertEnter`; Blink still owns its navigation keys. The adapter
+does not load Blink.
 
 Input-tools owns the input API and renderer; consumers own the action performed
 with the value. Lsp-tools uses this general API for rename automatically when it

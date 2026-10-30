@@ -29,7 +29,7 @@ def main():
         lua("vim.opt.rtp:prepend(vim.fn.getcwd()); vim.opt.rtp:append(" + repr(str(Path(os.environ["INPUT_TOOLS_BLINK_ROOT"]).resolve())) + "); "
             "input=require('input-tools'); input.setup({window={row=3}}); "
             "require('blink.cmp').setup({fuzzy={implementation='lua'}, "
-            "completion={menu=vim.tbl_deep_extend('force',{border='single'},require('input-tools.blink').menu_config())}, "
+            "sources=require('input-tools.blink').sources_config(), completion={menu=vim.tbl_deep_extend('force',{border='single'},require('input-tools.blink').menu_config())}, "
             "cmdline={completion={menu={auto_show=true},list={selection={preselect=true,auto_insert=false}}}, "
             "keymap={preset='none',['<Tab>']={'accept','fallback'},['<CR>']={'fallback'}}}})")
         keys(":")
@@ -79,6 +79,30 @@ def main():
         assert lua("return vim.g.ui_cmdline_pos") is None
         keys("<Esc>")
 
+        # Vim-buffer prompts use only their declared completion via the optional
+        # completefunc bridge, without inheriting unrelated default providers.
+        lua("_G.InputToolsBlinkComplete=function(lead,line,pos) return {'alpha','alpine'} end; "
+            "require('blink.cmp.config').keymap['<Tab>']={'accept','fallback'}")
+        keys(":lua input.input({vim_mode=true,default='al',completion='customlist,v:lua.InputToolsBlinkComplete'},function(v) buffer_done=true;buffer_value=v end)<CR>")
+        assert lua("return vim.b.completion and vim.bo.filetype=='input-tools-input'")
+        lua("require('blink.cmp').show(); vim.wait(120)")
+        menu = window('blink-cmp-menu')
+        assert menu, lua("return {errmsg=vim.v.errmsg,messages=vim.fn.execute('messages'),cf=vim.bo.completefunc,enabled=require('blink.cmp.config').enabled(),ids=require('blink.cmp.sources.lib').get_enabled_provider_ids('default'),result=require('input-tools.buffer').complete(0,'al')}")
+        assert lua("return require('blink.cmp.sources.lib').get_enabled_provider_ids('default')") == ['input_tools']
+        assert lua("return #require('blink.cmp').get_items()") == 2
+        lua("if not require('blink.cmp').get_selected_item() then require('blink.cmp').select_next() end")
+        keys('<CR>')
+        assert not lua('return buffer_done'), 'First Enter must accept completion'
+        assert lua('return vim.api.nvim_get_current_line()') in ('alpha','alpine')
+        keys('<CR>')
+        lua('assert(vim.wait(500,function() return buffer_done end,5))')
+        assert lua('return buffer_value') in ('alpha','alpine')
+        assert not lua("return require('blink.cmp').is_menu_visible()")
+        # No completion declaration keeps unrelated suggestions out of rename.
+        keys(":lua input.input({vim_mode=true,default='rename'},function()end)<CR>")
+        assert lua('return vim.b.completion') is False
+        keys('<C-c>')
+
         # Reconfigure and resize while a menu is active, then move the cursor.
         keys(":")
         keys("he")
@@ -102,7 +126,7 @@ def main():
         menu = window("blink-cmp-menu")
         assert menu and menu["row"] >= 12, menu
         keys("<Esc>")
-        print("Blink UI: anchoring, selection/acceptance, scrolling, insert mode, resize and position cleanup passed")
+        print("Blink UI: command-line anchoring, Vim-input source/acceptance, insert mode, resize and cleanup passed")
     finally:
         signal.alarm(0)
         ui.close()

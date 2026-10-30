@@ -85,6 +85,40 @@ function M.menu_config(opts)
   return callbacks
 end
 
+local buffer_source = false
+
+-- Optional Blink source configuration, using Blink's built-in completefunc
+-- bridge. Other filetypes, source lists, keymaps and native fallback stay intact.
+function M.sources_config(opts)
+  local sources = vim.deepcopy(opts or {})
+  sources.providers = sources.providers or {}
+  sources.providers.input_tools = {
+    name = "Input",
+    module = "blink.cmp.sources.complete_func",
+    opts = {
+      complete_func = function()
+        if vim.bo.filetype == "input-tools-input" and vim.b.input_tools_completion then
+          return vim.bo.completefunc
+        end
+      end,
+    },
+  }
+  sources.per_filetype = sources.per_filetype or {}
+  sources.per_filetype["input-tools-input"] = { "input_tools" }
+  buffer_source = true
+  -- The first input may have triggered lazy-loading Blink via InsertEnter.
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.b[buf].input_tools_completion then
+      vim.b[buf].completion = true
+    end
+  end
+  return sources
+end
+
+function M.buffer_enabled()
+  return buffer_source
+end
+
 ---Inspect only already-loaded Blink modules; never activate completion.
 function M.status()
   local config = package.loaded["blink.cmp.config"]

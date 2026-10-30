@@ -27,6 +27,10 @@ local handle = api.input({
   width = 32,
   vim_mode = true,
   default = "foo",
+  completion = "file",
+  highlight = function(text)
+    return #text > 0 and { { 0, #text, "String" } } or {}
+  end,
   scope = "cursor",
 }, function(value)
   if value then

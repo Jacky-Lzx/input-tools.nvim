@@ -45,6 +45,9 @@ local function update(a)
   if active ~= a or a.closed or not M.get_window() then
     return
   end
+  if a.editing then
+    a.editing.refresh(a.buf)
+  end
   local box, w, edge = geometry(a)
   if not vim.deep_equal(box, a.geometry) then
     local changed = vim.tbl_extend("force", {}, box)
@@ -128,6 +131,9 @@ complete_close = function(a, value)
     return
   end
   a.closed = true
+  if a.editing then
+    a.editing.detach(a.buf)
+  end
   if active == a then
     active = nil
   end
@@ -234,6 +240,10 @@ open_window = function(a)
       vim.split(opts.default or "", "\n", { plain = true })
     )
     vim.bo[a.buf].modified = false
+    if opts.completion or opts.highlight then
+      a.editing = require("input-tools.buffer")
+      a.editing.attach(a.buf, opts)
+    end
     local box, w = geometry(a)
     a.win = api.nvim_open_win(a.buf, true, box)
     a.geometry = box
@@ -261,13 +271,28 @@ open_window = function(a)
       end)
     end
     local function confirm()
+      local blink = package.loaded["blink.cmp"]
+      if blink and vim.b[a.buf].completion and blink.is_menu_visible() then
+        if not blink.accept() then
+          blink.hide()
+        end
+        return
+      end
       if vim.fn.pumvisible() == 1 then
         api.nvim_feedkeys(api.nvim_replace_termcodes("<C-y>", true, false, true), "n", false)
       else
         later(table.concat(api.nvim_buf_get_lines(a.buf, 0, -1, false), "\n"))
       end
     end
-    vim.keymap.set({ "n", "i" }, "<CR>", confirm, { buffer = a.buf, silent = true })
+    local function bind_confirm()
+      vim.keymap.set(
+        { "n", "i" },
+        "<CR>",
+        confirm,
+        { buffer = a.buf, silent = true, desc = "Confirm input or accept completion" }
+      )
+    end
+    bind_confirm()
     vim.keymap.set({ "n", "i" }, "<C-c>", function()
       later(nil)
     end, { buffer = a.buf, silent = true })
@@ -276,6 +301,19 @@ open_window = function(a)
     end, { buffer = a.buf, silent = true })
     vim.keymap.set("i", "<Esc>", "<Esc>", { buffer = a.buf, silent = true })
     a.group = api.nvim_create_augroup("InputToolsModal", { clear = true })
+    api.nvim_create_autocmd("InsertEnter", {
+      group = a.group,
+      buffer = a.buf,
+      callback = function()
+        -- Completion plugins install buffer mappings on InsertEnter. This
+        -- input owns Enter; retain their other completion/navigation mappings.
+        vim.schedule(function()
+          if active == a and not a.closed and not a.closing and M.get_window() then
+            bind_confirm()
+          end
+        end)
+      end,
+    })
     api.nvim_create_autocmd(
       { "TextChanged", "TextChangedI", "CursorMoved", "CursorMovedI", "ModeChanged" },
       {
@@ -308,6 +346,9 @@ open_window = function(a)
       callback = function(e)
         if e.event == "ColorScheme" then
           require("input-tools.highlights").setup(true)
+          if a.editing then
+            a.editing.refresh(a.buf, true)
+          end
         end
         refresh(a)
       end,
@@ -337,6 +378,11 @@ open_window = function(a)
 end
 
 function M.open(opts, callback, config)
+  assert(opts.completion == nil or type(opts.completion) == "string", "completion must be a string")
+  assert(
+    opts.highlight == nil or type(opts.highlight) == "string" or type(opts.highlight) == "function",
+    "highlight must be a callback or function name"
+  )
   assert(opts.default == nil or type(opts.default) == "string", "default must be a string")
   assert(opts.prompt == nil or type(opts.prompt) == "string", "prompt must be a string")
   if waiting then

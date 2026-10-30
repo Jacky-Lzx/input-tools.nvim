@@ -145,9 +145,21 @@ input(opts?, callback)   General input API for any consumer. Accepts vim_mode/
                          Vim mode returns {cancel=function}; cancel is idempotent.
                          It can open without enabling the cmdline renderer.
                          get_layout().vim_mode=true identifies this float.
-                         completion/highlight are native input() options used
-                         by vim_mode=false; Vim mode uses buffer editing and
-                         normal Vim buffer-completion keys (Blink is disabled).
+                         Both modes support completion/highlight specifications.
+                         Vim mode uses a local completefunc (<C-x><C-u>), backed
+                         by getcompletion() or custom/customlist callbacks.
+                         Custom callbacks receive argument/full input/byte cursor.
+                         Highlight callbacks return sorted zero-based byte spans
+                         {start,exclusive_end,group}; UTF-8 boundaries are required.
+                         Full input includes newlines. Text/theme changes refresh
+                         highlights; cursor movement reuses them. Callback errors
+                         warn once and preserve editable input.
+                         For optional Blink buffer suggestions, configure:
+                           opts.sources = require('input-tools.blink').sources_config(opts.sources)
+                         Only the input filetype uses this completefunc provider.
+                         Without completion, Blink stays disabled in the input.
+                         Neither adapter loads Blink. First Enter accepts the
+                         selected candidate, next Enter confirms the input.
                          Both modes use profiles.input and per-call styling.
                          position=cursor opens below the source cursor, flips
                          above when needed and clamps horizontally. Anchors to
