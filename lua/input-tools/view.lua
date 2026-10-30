@@ -58,7 +58,7 @@ function M.close()
   for _, name in ipairs({ "command", "menu", "status" }) do
     close(name)
   end
-  M.cursor = nil
+  M.cursor, M.source_anchor, M.source_point = nil, nil, nil
 end
 
 local function surface(name, lines, geometry, config)
@@ -137,6 +137,12 @@ function M.render(s, config)
   end
   local columns, rows = math.max(1, vim.o.columns), math.max(1, vim.o.lines - vim.o.cmdheight)
   local anchor
+  M.source_anchor = command
+      and command.input
+      and command.input.position == "cursor"
+      and command.input.anchor
+    or nil
+  M.source_point = nil
   if command then
     local requested = window.width or window.max_width
     if requested <= 1 then
@@ -165,6 +171,19 @@ function M.render(s, config)
       0,
       math.min(columns - width - edge, math.floor((columns - width - edge) / 2) + window.col)
     )
+    if command.input and command.input.position == "cursor" then
+      local near_row, near_col, source_point = require("input-tools.position").place(
+        command.input.anchor,
+        width + edge,
+        height + edge,
+        columns,
+        rows
+      )
+      M.source_point = source_point
+      if near_row then
+        row, col = near_row, near_col
+      end
+    end
     local box = geometry(row, col, width, height, window.border, window.zindex)
     if edge > 0 and window.title ~= false and window.title ~= "" then
       box.title, box.title_pos = window.title, window.title_pos

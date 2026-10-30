@@ -13,6 +13,8 @@ function M.context(args)
   then
     request.level = args[6]
     return {
+      position = request.position,
+      anchor = request.anchor,
       title = request.title,
       title_pos = request.title_pos,
       hide_prompt = request.hide_prompt,
@@ -32,6 +34,10 @@ function M.input(opts, on_confirm)
     opts.title_pos == nil or vim.tbl_contains({ "left", "center", "right" }, opts.title_pos),
     "title_pos must be left, center or right"
   )
+  assert(
+    opts.position == nil or vim.tbl_contains({ "editor", "cursor" }, opts.position),
+    "position must be editor or cursor"
+  )
   local native = { cancelreturn = vim.NIL }
   for _, key in ipairs({ "prompt", "default", "completion", "highlight" }) do
     if opts[key] ~= nil then
@@ -45,6 +51,8 @@ function M.input(opts, on_confirm)
     native.prompt = opts.title .. ": " -- Readable if the renderer is disabled/fails.
   end
   local request = {
+    position = opts.position,
+    anchor = opts.position == "cursor" and require("input-tools.position").capture() or nil,
     title = opts.title,
     title_pos = opts.title_pos,
     prompt = native.prompt or "",

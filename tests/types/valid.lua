@@ -19,14 +19,17 @@ local enabled = api.is_enabled()
 local layout = api.get_layout()
 ---@type integer|nil
 local window = api.get_window()
-api.input(
-  { title = "Project", title_pos = "center", default = "foo", scope = "cursor" },
-  function(value)
-    if value then
-      assert(type(value) == "string")
-    end
+api.input({
+  title = "Project",
+  title_pos = "center",
+  position = "cursor",
+  default = "foo",
+  scope = "cursor",
+}, function(value)
+  if value then
+    assert(type(value) == "string")
   end
-)
+end)
 api.disable()
 api.enable()
 api.toggle()

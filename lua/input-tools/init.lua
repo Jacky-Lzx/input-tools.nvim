@@ -5,6 +5,7 @@ local model = require("input-tools.model")
 local session
 local last_config, last_error
 local ns = vim.api.nvim_create_namespace("input-tools")
+local position_ns = vim.api.nvim_create_namespace("input-tools.position")
 
 ---@return boolean
 function M.is_enabled()
@@ -87,6 +88,7 @@ function M.teardown()
   if s.messages then
     s.messages:detach()
   end -- Release messages before our renderer.
+  vim.api.nvim_set_decoration_provider(position_ns, {})
   vim.ui_detach(ns)
   pcall(vim.api.nvim_del_augroup_by_id, s.group)
   if package.loaded["input-tools.view"] then
@@ -234,6 +236,20 @@ function M.setup(opts)
         s.highlights = false
       end
       render(s)
+    end,
+  })
+  -- WinScrolled/WinResized are delayed until Normal mode. Observe source
+  -- geometry after drawing instead, and only schedule actual window updates.
+  vim.api.nvim_set_decoration_provider(position_ns, {
+    on_end = function()
+      local view = package.loaded["input-tools.view"]
+      if session ~= s or not view or not view.source_anchor then
+        return
+      end
+      local ok, point = pcall(require("input-tools.position").point, view.source_anchor)
+      if ok and not vim.deep_equal(point, view.source_point) then
+        render(s, true)
+      end
     end,
   })
   vim.api.nvim_create_autocmd(

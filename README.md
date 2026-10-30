@@ -227,7 +227,8 @@ preserves both the active instance and the configuration used by `enable()`.
 
 `input.input(opts, on_confirm)` uses Neovim's native input engine directly,
 allowing one tool to opt into this renderer even when another plugin owns
-`vim.ui.input`. It accepts `title`, `title_pos`, `prompt`, `default`, `completion` and `highlight`;
+`vim.ui.input`. It accepts `position`, `title`, `title_pos`, `prompt`, `default`, `completion` and
+`highlight`;
 provider-specific fields such as `scope` are ignored. The `profiles.input`
 layout applies. It never replaces `vim.ui.input` or enables a disabled renderer;
 when disabled, the same call falls back to native command-line display.
@@ -235,12 +236,30 @@ when disabled, the same call falls back to native command-line display.
 Any consumer can call the same public API directly:
 
 ```lua
-require("input-tools").input({ title = "Project name", title_pos = "center", default = "demo" }, function(value)
+require("input-tools").input({
+  position = "cursor",
+  title = "Project name",
+  title_pos = "center",
+  default = "demo",
+}, function(value)
   if value ~= nil then
     -- Use the accepted value (including an empty string).
   end
 end)
 ```
+
+`position="cursor"` opens beside the caller's buffer cursor, below its screen
+line when space permits and above otherwise. The frame shifts horizontally to
+fit the editor. It anchors to the original buffer position rather than following
+the input cursor while typing, and updates after source scrolling, split changes
+and editor resizing. Screen coordinates account for wrapping, tabs, wide characters
+and window decorations. If that source window/buffer is no longer visible, the
+configured editor layout is used. There is no polling timer.
+
+`position="editor"` (default) retains the configured `window.row`/`window.col`
+layout. Cursor positioning overrides those coordinates while retaining the input
+profile's size, border, title and blending. Native completion menus and Blink's
+position adapter use the same final frame geometry.
 
 `title` appears in the upper border. `title_pos` is `"left"`, `"center"` or
 `"right"`, defaulting to `profiles.input.title_pos` / `window.title_pos` (center).
