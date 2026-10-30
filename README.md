@@ -48,6 +48,27 @@ or early loading is needed. Keep Blink's command-line menu enabled as usual.
 Custom `cmdline_position` callbacks must honor this position to follow the UI.
 The position updates with layout/scrolling and is released when input closes;
 teardown restores the previous value only while input-tools still owns it.
+
+Blink normally aligns candidate text, allowing its icons/padding to extend left
+of the input and its top border to share the input's bottom border. To align the
+**outer window frames** instead, merge these options into Blink's configuration:
+
+```lua
+-- In Blink's lazy.nvim opts function, after input-tools is on runtimepath:
+opts.completion = opts.completion or {}
+local menu = opts.completion.menu or {}
+opts.completion.menu = vim.tbl_deep_extend(
+  "force", menu, require("input-tools.blink").menu_config(menu)
+)
+```
+
+This configures Blink's public position/direction callbacks, aligns both left
+borders, and places the menu completely below or above the input's border. It
+compensates Blink's renderer alignment offset without changing the columns,
+icons or padding. The optional adapter reads that offset from an already-loaded
+renderer through a guarded internal accessor. Insert-mode completion retains its
+existing direction callback and layout. The helper falls back to the supplied
+positioning callbacks (or native positioning) when input-tools is disabled.
 When layout changes, an already-loaded Blink menu is repositioned on the next
 event-loop turn. This guarded adapter uses Blink's internal menu positioning
 function because it has no public reposition-only API; it never loads or patches
@@ -144,6 +165,7 @@ local input = require("input-tools")
 input.setup(opts)          -- Validate, replace the old instance, then attach.
 input.is_enabled()         -- Whether our UI subscription is active.
 input.status()             -- { enabled = boolean, notifications = boolean }
+input.get_window()         -- Visible input window ID, or nil; does not load UI.
 input.sync_notifications() -- Retry the optional handoff after producer setup.
 input.teardown()           -- Release messages, UI subscription, floats/autocmds.
 ```

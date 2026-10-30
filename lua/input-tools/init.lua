@@ -10,6 +10,16 @@ function M.is_enabled()
   return session ~= nil
 end
 
+---Return the visible input window without loading the renderer.
+---@return integer? win
+function M.get_window()
+  local view = package.loaded["input-tools.view"]
+  local win = session and view and view.cursor and view.cursor.win
+  if win and vim.api.nvim_win_is_valid(win) then
+    return win
+  end
+end
+
 ---Join only an installed, configured notification-tools instance; never load it.
 function M.sync_notifications()
   local s = session

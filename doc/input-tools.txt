@@ -42,6 +42,19 @@ Layout changes coalesce a refresh of an already-loaded Blink menu on the next
 event-loop turn. This guarded call uses Blink's internal menu positioning method;
 no Blink modules are loaded or patched, and completion behavior stays with Blink.
 
+For matching outer borders, merge the following into Blink's opts:
+>
+    local menu = opts.completion.menu or {}
+    opts.completion.menu = vim.tbl_deep_extend("force", menu,
+      require("input-tools.blink").menu_config(menu))
+<
+This configures public position/direction callbacks and compensates candidate
+alignment using an already-loaded renderer's guarded internal offset accessor.
+Both left borders align and the menu stays outside the input border. No columns,
+icons, padding or keys are changed. Insert-mode direction and supplied position
+callbacks are preserved when this input renderer is inactive. Evaluate these
+options after input-tools is on runtimepath.
+
 The default return_prompt=auto acknowledges only hit-enter prompts. Confirm,
 numbered choice and substitution prompts always wait for the user's answer.
 return_prompt=show displays the hit-enter prompt until answered. Externalized
@@ -80,6 +93,7 @@ setup(opts?)             Validate, replace the old instance, attach and join.
 teardown()               Release message handle, UI callback, floats/autocmds.
 is_enabled()             True while our UI subscription is active.
 status()                 { enabled=boolean, notifications=boolean }.
+get_window()             Visible input window ID, or nil; does not load UI.
 sync_notifications()     Retry the handoff after an already loaded producer setup.
 
 Invalid configuration preserves the working instance. UI errors disable this

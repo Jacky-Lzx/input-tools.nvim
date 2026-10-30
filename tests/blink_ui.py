@@ -29,7 +29,7 @@ def main():
         lua("vim.opt.rtp:prepend(vim.fn.getcwd()); vim.opt.rtp:append(" + repr(str(Path(os.environ["INPUT_TOOLS_BLINK_ROOT"]).resolve())) + "); "
             "input=require('input-tools'); input.setup({window={row=3}}); "
             "require('blink.cmp').setup({fuzzy={implementation='lua'}, "
-            "completion={menu={border='single'}}, "
+            "completion={menu=vim.tbl_deep_extend('force',{border='single'},require('input-tools.blink').menu_config())}, "
             "cmdline={completion={menu={auto_show=true},list={selection={preselect=true,auto_insert=false}}}, "
             "keymap={preset='none',['<Tab>']={'accept','fallback'},['<CR>']={'fallback'}}}})")
         keys(":")
@@ -37,8 +37,8 @@ def main():
         palette, menu = window("input-tools-command"), window("blink-cmp-menu")
         assert palette and menu, (palette, menu)
         assert palette["row"] == 3
-        assert menu["row"] == palette["row"] + palette["height"] + 1, (palette, menu)
-        assert abs(menu["col"] - palette["col"]) < 10, (palette, menu)
+        assert menu["row"] == palette["row"] + palette["height"] + 2, (palette, menu)
+        assert menu["col"] == palette["col"], (palette, menu)
         assert window("input-tools-menu") is None, "Native and Blink menus must not duplicate"
         selected = lua("return require('blink.cmp').get_selected_item().label")
         keys("<Tab>")
@@ -55,7 +55,7 @@ def main():
         keys("InputToolsBlink " + "x" * 100 + " al")
         palette, menu = window("input-tools-command"), window("blink-cmp-menu")
         assert palette and menu and lua("return vim.g.ui_cmdline_pos[2]") < 0, (palette, menu)
-        assert palette["col"] <= menu["col"] < palette["col"] + palette["width"], (palette, menu)
+        assert menu["col"] == palette["col"], (palette, menu)
         keys("<Esc>")
         lua("input.setup({window={row=3}})")
 
@@ -74,13 +74,13 @@ def main():
         ui.request("nvim_ui_try_resize", [80, 24])
         lua("vim.wait(150)")
         palette, menu = window("input-tools-command"), window("blink-cmp-menu")
-        assert palette and menu and abs(menu["col"] - palette["col"]) < 10, (palette, menu)
+        assert palette and menu and menu["col"] == palette["col"], (palette, menu)
         keys("<Left>")
         assert lua("return vim.g.ui_cmdline_pos") is not None
         lua("input.setup()")
         keys("<End>l")
         palette, menu = window("input-tools-command"), window("blink-cmp-menu")
-        assert palette and menu and menu["row"] < palette["row"], (palette, menu)
+        assert palette and menu and menu["row"] + menu["height"] + 2 <= palette["row"], (palette, menu)
         keys("<Esc>")
         lua("input.setup({window={row=3}})")
         keys(":")

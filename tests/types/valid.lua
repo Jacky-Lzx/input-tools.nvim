@@ -12,6 +12,8 @@ local api = input.setup(opts)
 local status = api.status()
 ---@type boolean
 local enabled = api.is_enabled()
+---@type integer|nil
+local window = api.get_window()
 api.sync_notifications()
 api.teardown()
-return { status = status, enabled = enabled }
+return { status = status, enabled = enabled, window = window }
