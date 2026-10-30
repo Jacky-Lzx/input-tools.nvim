@@ -10,3 +10,4 @@ input.input({ title = 42 }, function() end) -- expect-type-error
 input.input({ title_pos = "bottom" }, function() end) -- expect-type-error
 input.input({ position = "bottom" }, function() end) -- expect-type-error
 input.input({ width = "small" }, function() end) -- expect-type-error
+input.input({ vim_mode = "yes" }, function() end) -- expect-type-error

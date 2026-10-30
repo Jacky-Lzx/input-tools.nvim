@@ -123,14 +123,32 @@ status()                 enabled, notifications, window, blink and last_error.
 The command remains available when disabled. Completion lists its subcommands.
 get_window()             Visible input window ID, or nil; does not load UI.
 get_layout()             Independent visible layout snapshot, or nil.
-input(opts?, callback)   General native input API for any consumer. Accepts width/
+input(opts?, callback)   General input API for any consumer. Accepts vim_mode/
+                         width/
                          position/
                          title/
                          title_pos/prompt/default/
                          completion/highlight; ignores provider-specific fields.
                          Callback receives nil on cancel, "" for accepted empty.
                          Does not replace vim.ui.input or enable the renderer.
-                         Uses profiles.input while active, native UI if disabled.
+                         vim_mode=false (default): native command-line engine;
+                         native display is used if the renderer is disabled.
+                         vim_mode=true: focusable scratch buffer, initially in
+                         Insert mode. Esc enters Normal; native motions, ciw,
+                         undo/redo work. Enter confirms in Normal or Insert.
+                         Ctrl-C cancels; Normal-mode Esc cancels too. A visible
+                         completion menu consumes Enter to accept its item first.
+                         Focus is restored before the scheduled callback. Only
+                         buffer-local mappings are installed. Accepted empty
+                         text is ""; cancellation is nil. Window close/leave,
+                         teardown/disable or a newer Vim input also cancel once.
+                         Vim mode returns {cancel=function}; cancel is idempotent.
+                         It can open without enabling the cmdline renderer.
+                         get_layout().vim_mode=true identifies this float.
+                         completion/highlight are native input() options used
+                         by vim_mode=false; Vim mode uses buffer editing and
+                         normal Vim buffer-completion keys (Blink is disabled).
+                         Both modes use profiles.input and per-call styling.
                          position=cursor opens below the source cursor, flips
                          above when needed and clamps horizontally. Anchors to
                          the original buffer position and follows source scroll,

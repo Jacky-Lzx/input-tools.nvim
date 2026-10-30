@@ -10,6 +10,7 @@ Requires **Neovim 0.10+**. No runtime dependencies.
   nested command lines, multiline definition context and command-line history.
 - Native command-line and insert-mode completion menus with selection tracking.
 - Confirmation, numbered-choice and substitution prompts when messages are externalized.
+- Optional Vim-mode inputs with real Normal/Insert editing and buffer-local controls.
 - Optional cooperation with notification-tools; ordinary messages stay out of this plugin.
 - Resize/theme updates, repeated setup/teardown and restoration of the native UI.
 
@@ -225,18 +226,20 @@ preserves both the active instance and the configuration used by `enable()`.
 
 ### General input API
 
-`input.input(opts, on_confirm)` uses Neovim's native input engine directly,
-allowing one tool to opt into this renderer even when another plugin owns
-`vim.ui.input`. It accepts `width`, `position`, `title`, `title_pos`, `prompt`, `default`, `completion` and
-`highlight`;
-provider-specific fields such as `scope` are ignored. The `profiles.input`
-layout applies. It never replaces `vim.ui.input` or enables a disabled renderer;
-when disabled, the same call falls back to native command-line display.
+`input.input(opts, on_confirm)` provides a shared input API even when another
+plugin owns `vim.ui.input`. `vim_mode=false` (default) uses Neovim's native
+command-line input engine. `vim_mode=true` opens a real editable scratch buffer
+with native Normal/Insert editing. Both use the `profiles.input` layout and
+per-call `width`, `position`, `title`, `title_pos`, `prompt` and `default` options.
+Neither replaces `vim.ui.input` or enables the global command-line renderer.
+Native input falls back to Neovim's display when the renderer is disabled;
+explicit Vim-mode input can open independently of that renderer.
 
 Any consumer can call the same public API directly:
 
 ```lua
 require("input-tools").input({
+  vim_mode = true,
   position = "cursor",
   width = 32,
   title = "Project name",
@@ -275,6 +278,24 @@ it for a title-only input with only the value on the editable line. When there i
 no border or the renderer is disabled, title-only inputs use an inline label.
 Titles do not leak to later calls or nested command-line expressions.
 
+In Vim mode the buffer starts in Insert at the end of `default`. `Esc` switches
+to Normal for motions, operators such as `ciw`, and undo/redo. `Enter` confirms
+from Normal or Insert (with an active completion menu it accepts that item first).
+`Ctrl-C` cancels from either mode; `Esc` in Normal also cancels. Closing the input,
+leaving its window, calling `teardown()`/`disable()`, or opening a newer Vim input
+cancels it exactly once. Only input-buffer mappings are installed. The source
+window regains focus before the scheduled callback runs; accepted empty text is
+`""`, cancellation is `nil`. If the user leaves for another window, that chosen
+window keeps focus.
+
+Vim-mode calls return an optional handle with an idempotent `cancel()` method;
+native command-line calls return `nil`. `get_window()` and `get_layout()` expose
+the editable float too (`layout.vim_mode=true`), and lifecycle events still apply.
+The Vim buffer uses normal Neovim editing/completion rather than the native
+`input()` completion/highlight specifications; `completion` and `highlight` are
+for `vim_mode=false`. External Blink buffer completion is disabled for this
+scratch input, while normal Vim buffer-completion keys remain available.
+
 Input-tools owns the input API and renderer; consumers own the action performed
 with the value. Lsp-tools uses this general API for rename automatically when it
 is available, without a configuration callback or a rename-specific input API.
@@ -308,8 +329,8 @@ Close carries the previous snapshot. Callback mutations cannot alter renderer
 state; callback errors are reported without disabling input. The Blink adapter
 uses this public geometry API for the input anchor.
 
-No idle timer runs. UI events update the native input state and redraw the
-non-focusable floats; repeated identical events do not schedule redraw loops.
+No idle timer runs. UI events update native command-line state and redraw its
+non-focusable floats; Vim-mode API inputs use their own focusable buffers. Repeated identical events do not schedule redraw loops.
 Fast-event work is deferred. Rendering failures disable the UI and release the
 message handoff, restoring native input rather than leaving an invisible prompt.
 Invalid configuration is rejected before replacing a working instance.

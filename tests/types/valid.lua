@@ -19,11 +19,13 @@ local enabled = api.is_enabled()
 local layout = api.get_layout()
 ---@type integer|nil
 local window = api.get_window()
-api.input({
+---@type input_tools.InputHandle|nil
+local handle = api.input({
   title = "Project",
   title_pos = "center",
   position = "cursor",
   width = 32,
+  vim_mode = true,
   default = "foo",
   scope = "cursor",
 }, function(value)
@@ -31,6 +33,9 @@ api.input({
     assert(type(value) == "string")
   end
 end)
+if handle then
+  handle.cancel()
+end
 api.disable()
 api.enable()
 api.toggle()

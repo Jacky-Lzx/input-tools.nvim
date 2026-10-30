@@ -58,7 +58,7 @@ function M.close()
   for _, name in ipairs({ "command", "menu", "status" }) do
     close(name)
   end
-  M.cursor, M.source_anchor, M.source_point = nil, nil, nil
+  M.cursor, M.source_anchor, M.source_point, M.layout = nil, nil, nil, nil
 end
 
 local function surface(name, lines, geometry, config)
@@ -386,6 +386,12 @@ function M.render(s, config)
       cursor = { row = cursor.row - 1, col = cursor.col - 1 },
     }
   end
-  require("input-tools.events").set(layout)
+  M.layout = layout
+  local modal = package.loaded["input-tools.modal"]
+  if layout or not (modal and modal.get_window()) then
+    require("input-tools.events").set(layout)
+  else
+    modal.refresh()
+  end
 end
 return M

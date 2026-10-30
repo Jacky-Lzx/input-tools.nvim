@@ -16,7 +16,8 @@ end
 ---@return integer? win
 function M.get_window()
   local view = package.loaded["input-tools.view"]
-  local win = session and view and view.cursor and view.cursor.win
+  local modal = package.loaded["input-tools.modal"]
+  local win = session and view and view.cursor and view.cursor.win or modal and modal.get_window()
   if win and vim.api.nvim_win_is_valid(win) then
     return win
   end
@@ -25,6 +26,14 @@ end
 ---Return a copy of the current layout. Coordinates are zero-based screen cells.
 ---@return input_tools.Layout? layout
 function M.get_layout()
+  local view = package.loaded["input-tools.view"]
+  if session and view and view.layout then
+    return vim.deepcopy(view.layout)
+  end
+  local modal = package.loaded["input-tools.modal"]
+  if modal and modal.get_window() then
+    return modal.get_layout()
+  end
   if session then
     local events = package.loaded["input-tools.events"]
     return events and events.get() or nil
@@ -32,12 +41,17 @@ function M.get_layout()
 end
 
 ---General input API for consumers, independent of the action using the result.
----Use native input explicitly, even when another plugin owns vim.ui.input.
----The active input-tools renderer draws it; disabled instances use native UI.
+---Use native command-line input or opt into a real Vim-editable buffer.
+---Native input uses the active renderer or falls back to Neovim display.
 ---@param opts? input_tools.InputOptions
 ---@param on_confirm fun(value: string?)
+---@return input_tools.InputHandle?
 function M.input(opts, on_confirm)
-  return require("input-tools.input").input(opts, on_confirm)
+  return require("input-tools.input").input(
+    opts,
+    on_confirm,
+    session and session.config or last_config
+  )
 end
 
 ---Join only an installed, configured notification-tools instance; never load it.
@@ -81,10 +95,14 @@ end
 
 function M.teardown()
   local s = session
+  session = nil
+  local modal = package.loaded["input-tools.modal"]
+  if modal then
+    modal.cancel()
+  end
   if not s then
     return
   end
-  session = nil
   if s.messages then
     s.messages:detach()
   end -- Release messages before our renderer.

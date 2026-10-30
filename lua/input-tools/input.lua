@@ -23,7 +23,7 @@ function M.context(args)
   end
 end
 
-function M.input(opts, on_confirm)
+function M.input(opts, on_confirm, config)
   assert(opts == nil or type(opts) == "table", "input options must be a table")
   assert(type(on_confirm) == "function", "on_confirm must be a function")
   opts = opts or {}
@@ -48,6 +48,10 @@ function M.input(opts, on_confirm)
         and (width <= 1 or width == math.floor(width)),
     "width must be a positive integer or a fraction in (0, 1]"
   )
+  assert(opts.vim_mode == nil or type(opts.vim_mode) == "boolean", "vim_mode must be a boolean")
+  if opts.vim_mode then
+    return require("input-tools.modal").open(opts, on_confirm, config)
+  end
   local native = { cancelreturn = vim.NIL }
   for _, key in ipairs({ "prompt", "default", "completion", "highlight" }) do
     if opts[key] ~= nil then
