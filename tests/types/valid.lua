@@ -17,6 +17,11 @@ local enabled = api.is_enabled()
 local layout = api.get_layout()
 ---@type integer|nil
 local window = api.get_window()
+api.input({ prompt = "Name: ", default = "foo", scope = "cursor" }, function(value)
+  if value then
+    assert(type(value) == "string")
+  end
+end)
 api.disable()
 api.enable()
 api.toggle()

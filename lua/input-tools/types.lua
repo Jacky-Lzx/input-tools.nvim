@@ -37,6 +37,13 @@
 ---@field profiles? input_tools.Profiles Overrides merged over window for each input kind.
 ---@field popupmenu? input_tools.PopupmenuConfig
 
+---@class input_tools.InputOptions
+---@field prompt? string Input prompt.
+---@field default? string Initial value.
+---@field completion? string Native input() completion specification.
+---@field highlight? string|function Native input() highlight callback.
+---@field scope? string Accepted for vim.ui.input provider compatibility; layout follows profiles.input.
+
 ---@class input_tools.ScreenPosition
 ---@field row integer Zero-based screen row.
 ---@field col integer Zero-based screen column; text origin can be negative while scrolling.

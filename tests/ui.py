@@ -95,6 +95,18 @@ def main():
         keys("<CR>")
         assert lua("return vim.g.colored_input") == "你好"
 
+        # Explicit adapter remains available when another plugin owns vim.ui.input.
+        lua("saved_input=vim.ui.input; vim.ui.input=function() error('global input owner used') end")
+        keys(":lua input.input({prompt='Rename to: ',default='foo',scope='cursor'}, function(v) vim.g.adapter_value=v or '__cancel' end)<CR>")
+        assert lua("return input.get_layout().kind") == "input"
+        assert lua("return vim.fn.getcmdline()") == "foo"
+        keys("<C-u>新名称<CR>")
+        assert lua("return vim.g.adapter_value") == "新名称"
+        keys(":lua input.input({prompt='Rename to: ',default='foo'}, function(v) vim.g.adapter_value=v or '__cancel' end)<CR>")
+        keys("<Esc>")
+        assert lua("return vim.g.adapter_value") == "__cancel"
+        lua("vim.ui.input=saved_input")
+
         keys(":function! InputToolsExample()<CR>")
         assert "function! InputToolsExample()" in text(), text()
         keys("return 7<CR>endfunction<CR>")

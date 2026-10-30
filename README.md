@@ -208,6 +208,9 @@ input.is_enabled()         -- Whether our UI subscription is active.
 input.status()             -- Ownership, window, Blink state and last render error.
 input.get_window()         -- Visible input window ID, or nil; does not load UI.
 input.get_layout()         -- Independent snapshot of visible input geometry, or nil.
+input.input({ prompt = "Name: ", default = "old" }, function(value)
+  -- value is nil on cancellation; an accepted empty string remains "".
+end)
 input.sync_notifications() -- Retry the optional handoff after producer setup.
 input.teardown()           -- Release messages, UI subscription, floats/autocmds.
 ```
@@ -217,6 +220,23 @@ same controls. The command remains available while disabled. `status()` and
 `:checkhealth input-tools` inspect already-loaded Blink without activating it.
 A successful setup clears the recorded renderer error. Invalid reconfiguration
 preserves both the active instance and the configuration used by `enable()`.
+
+### Explicit native input adapter
+
+`input.input(opts, on_confirm)` uses Neovim's native input engine directly,
+allowing one tool to opt into this renderer even when another plugin owns
+`vim.ui.input`. It accepts `prompt`, `default`, `completion` and `highlight`;
+provider-specific fields such as `scope` are ignored. The `profiles.input`
+layout applies. It never replaces `vim.ui.input` or enables a disabled renderer;
+when disabled, the same call falls back to native command-line display.
+
+For lsp-tools versions with a rename input provider:
+
+```lua
+require("lsp-tools").setup({
+  rename = { input = require("input-tools").input },
+})
+```
 
 ### Layout API and events
 

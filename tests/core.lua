@@ -91,6 +91,32 @@ view.close()
 eq({ 88, 12 }, vim.g.ui_cmdline_pos) -- A later owner must survive teardown.
 vim.g.ui_cmdline_pos = nil
 
+-- Explicit input bypasses other vim.ui.input owners and keeps cancel semantics.
+local native_input, global_input = vim.fn.input, vim.ui.input
+local returned, captured
+vim.ui.input = function()
+  error("global provider must not be used")
+end
+vim.fn.input = function(opts)
+  captured = opts
+  return ""
+end
+tools.input({ prompt = "Rename: ", default = "foo", scope = "cursor" }, function(value)
+  returned = value
+end)
+eq("", returned)
+eq(nil, captured.scope)
+eq("foo", captured.default)
+eq(vim.NIL, captured.cancelreturn)
+vim.fn.input = function()
+  return vim.NIL
+end
+tools.input({}, function(value)
+  returned = value
+end)
+eq(nil, returned)
+vim.fn.input, vim.ui.input = native_input, global_input
+
 -- Lifecycle ownership, validation before replacement and no hard dependency.
 local attach, detach = vim.ui_attach, vim.ui_detach
 local callback, attached, detached
