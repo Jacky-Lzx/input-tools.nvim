@@ -85,6 +85,7 @@ require("input-tools").setup({
     max_width = 80,
     max_height = 8,
     bottom = 1,
+    -- row = 3, -- Optional zero-based top offset; overrides bottom placement.
     winblend = 0,
     zindex = 250,
   },
@@ -96,7 +97,11 @@ require("input-tools").setup({
 })
 ```
 
-The command line is centered near the bottom. Long input scrolls horizontally
+The command line is centered near the bottom by default. Set `window.row = 3`
+for a top-centered command palette like Noice's `command_palette` preset. The
+position is clamped on small screens. Completion menus appear below a top input
+or above a bottom input, falling back to available space without overlapping it.
+Long input scrolls horizontally
 with the cursor; multiline prompts/context use at most `max_height` rows. Menu
 selection, acceptance and cancellation use Neovim's existing keys and settings.
 Use `wildoptions=pum` and `wildmode=full` if you want the native command-line

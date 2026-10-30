@@ -110,6 +110,9 @@ function M.render(s, config)
     local first = math.max(1, command.row - height + 1)
     local lines = vim.list_slice(command.lines, first, first + height - 1)
     local row = math.max(0, rows - height - edge - config.window.bottom)
+    if config.window.row ~= nil then
+      row = math.max(0, math.min(config.window.row, rows - height - edge))
+    end
     local col = math.max(0, math.floor((columns - width - edge) / 2))
     local item = surface(
       "command",
@@ -130,7 +133,14 @@ function M.render(s, config)
         { end_col = math.min(#command.prefix, #lines[1]), hl_group = "InputToolsPrompt" }
       )
     end
-    anchor = { row = row, col = col + edge / 2, width = width, item = item, command = command }
+    anchor = {
+      row = row,
+      col = col + edge / 2,
+      width = width,
+      height = height,
+      item = item,
+      command = command,
+    }
     M.cursor = { win = item.win, row = cursor_row, col = math.max(0, cursor_col) }
   else
     close("command")
@@ -138,8 +148,22 @@ function M.render(s, config)
   end
 
   local menu = s.menu
+  local menu_height, menu_row
+  if menu and menu.grid == -1 and anchor then
+    local below_row = anchor.row + anchor.height + edge
+    local above, below = math.max(0, anchor.row - 2), math.max(0, rows - below_row - 2)
+    local use_below = (anchor.row < rows / 2 and below > 0) or above == 0
+    local available = use_below and below or above
+    if available == 0 then
+      menu = nil -- No non-overlapping space for a bordered menu.
+    else
+      menu_height = math.min(config.popupmenu.max_height, #menu.items, available)
+      menu_row = use_below and below_row or (anchor.row - menu_height - 2)
+    end
+  end
   if menu and #menu.items > 0 and (menu.grid ~= -1 or anchor) then
-    local height = math.min(config.popupmenu.max_height, #menu.items, math.max(1, rows - 2))
+    local height = menu_height
+      or math.min(config.popupmenu.max_height, #menu.items, math.max(1, rows - 2))
     local first = math.max(1, menu.selected - height + 2)
     first = math.min(first, math.max(1, #menu.items - height + 1))
     local lines, width = {}, 1
@@ -155,7 +179,7 @@ function M.render(s, config)
     width = math.max(1, math.min(width + 1, config.popupmenu.max_width, columns - 2))
     local row, col = menu.row, menu.col
     if menu.grid == -1 then
-      row = math.max(0, anchor.row - height - 2)
+      row = menu_row
       local left = api.nvim_win_call(anchor.item.win, vim.fn.winsaveview).leftcol
       col = anchor.col
         + display_width(anchor.command.prefix .. anchor.command.content:sub(1, menu.col))

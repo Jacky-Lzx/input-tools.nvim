@@ -98,6 +98,15 @@ def main():
         keys("<Tab>")
         keys("<Esc>")
         assert not floats("menu") and not floats("command")
+        lua("input.setup({window={row=3}})")
+        keys(":InputTools<Tab>")
+        palette = lua("return vim.api.nvim_win_get_config(" + str(floats("command")[0]) + ")")
+        menu = lua("return vim.api.nvim_win_get_config(" + str(floats("menu")[0]) + ")")
+        assert palette["row"] == 3, palette
+        assert palette["col"] == (100 - palette["width"] - 2) // 2, palette
+        assert menu["row"] >= palette["row"] + palette["height"] + 2, (palette, menu)
+        keys("<Esc>")
+        lua("input.setup()")
         lua("vim.api.nvim_buf_set_lines(0, 0, -1, false, {''}); "
             "_G.InputToolsComplete = function(start) return start == 1 and 0 or {'apple', 'apricot'} end; "
             "vim.bo.omnifunc = 'v:lua.InputToolsComplete'")

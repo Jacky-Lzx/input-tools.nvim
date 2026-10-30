@@ -3,7 +3,7 @@ local input = require("input-tools")
 local opts = {
   notifications = true,
   return_prompt = "show",
-  window = { border = "rounded", max_width = 70 },
+  window = { border = "rounded", max_width = 70, row = 3 },
   popupmenu = { enabled = false },
 }
 ---@type input_tools.API

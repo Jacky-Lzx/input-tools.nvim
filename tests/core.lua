@@ -68,6 +68,16 @@ model.event(
 )
 view.render(s, config)
 eq(focus, vim.api.nvim_get_current_win())
+config.window.row = 3
+view.render(s, config)
+local positioned = vim.api.nvim_win_get_config(view.cursor.win)
+eq(3, positioned.row)
+eq(math.floor((vim.o.columns - positioned.width - 2) / 2), positioned.col)
+for _, win in ipairs(vim.api.nvim_list_wins()) do
+  if vim.bo[vim.api.nvim_win_get_buf(win)].filetype == "input-tools-menu" then
+    eq(6, vim.api.nvim_win_get_config(win).row)
+  end
+end
 vim.o.columns, vim.o.lines = 18, 6
 view.render(s, config)
 view.close()
@@ -87,6 +97,7 @@ assert(tools.is_enabled())
 assert(not package.loaded["notification-tools"], "standalone setup must not load notifications")
 assert(not pcall(tools.setup, { window = { max_width = 0 } }))
 assert(tools.is_enabled(), "invalid reconfiguration must preserve the working renderer")
+assert(not pcall(tools.setup, { window = { row = -1 } }))
 eq(nil, callback("msg_show", "echo", { { 0, "not ours" } }))
 tools.teardown()
 assert(detached and not tools.is_enabled())

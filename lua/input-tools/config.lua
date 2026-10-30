@@ -47,6 +47,12 @@ function M.resolve(opts)
     )
   end
   assert(config.window.winblend <= 100, "winblend must be <= 100")
+  local row = config.window.row
+  assert(
+    row == nil
+      or (type(row) == "number" and row >= 0 and row < math.huge and row == math.floor(row)),
+    "window.row must be a nonnegative integer or nil"
+  )
   return config
 end
 return M

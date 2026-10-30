@@ -21,8 +21,11 @@ CONFIGURATION                                         *input-tools-config*
       popupmenu = { enabled = true, max_height = 8, max_width = 60 },
     })
 <
-Long commands scroll horizontally. Prompt/context height is bounded. Nested
-command lines, expression input and multiline definition blocks are supported.
+Long commands scroll horizontally. Prompt/context height is bounded.
+window.row optionally sets a zero-based top offset (e.g. 3 for a top-centered
+command palette), overriding bottom placement. Small screens clamp the position.
+Completion menus use the available space below/above the input without overlap.
+Nested command lines, expression input and multiline definition blocks are supported.
 With popupmenu.enabled=true both native command-line and insert completion menus
 are drawn here. Neovim still owns selection/acceptance keys and completion
 sources. For command-line popup completion, use wildoptions=pum and wildmode=full.

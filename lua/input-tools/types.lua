@@ -5,6 +5,7 @@
 ---@field max_width? integer Maximum content width in display cells.
 ---@field max_height? integer Maximum context/prompt rows.
 ---@field bottom? integer Bottom margin in display rows.
+---@field row? integer Zero-based top offset; omit to use the bottom margin.
 ---@field winblend? integer Transparency, 0..100.
 ---@field zindex? integer Float stacking priority.
 
