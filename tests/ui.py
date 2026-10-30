@@ -121,6 +121,23 @@ def main():
         assert palette["col"] == (100 - palette["width"] - 2) // 2, palette
         assert menu["row"] >= palette["row"] + palette["height"] + 2, (palette, menu)
         keys("<Esc>")
+        # Borderless menus, Unicode clipping and scrolling stay within the
+        # screen and keep the selected candidate visible.
+        lua("input.setup({window={row=3,width=20,border='none'},popupmenu={border='none',max_height=3,max_width=18}}); "
+            "vim.api.nvim_create_user_command('InputToolsList', function() end, {nargs='*',complete=function() "
+            "local r={}; for i=1,15 do r[i]='候选项'..i..string.rep('长',20) end; return r end})")
+        keys(":InputToolsList <Tab>")
+        for _ in range(6):
+            keys("<Tab>")
+        menu_id = floats("menu")[0]
+        menu = lua("return vim.api.nvim_win_get_config(" + str(menu_id) + ")")
+        palette = lua("return vim.api.nvim_win_get_config(" + str(floats("command")[0]) + ")")
+        assert menu['row'] >= palette['row'] + palette['height']
+        assert menu['col'] == palette['col'] and menu['width'] <= 18 and menu['height'] == 3
+        assert lua("local w=" + str(menu_id) + "; local b=vim.api.nvim_win_get_buf(w); "
+                   "for _,l in ipairs(vim.api.nvim_buf_get_lines(b,0,-1,false)) do if vim.fn.strdisplaywidth(l)>18 then return false end end; "
+                   "return #vim.api.nvim_buf_get_extmarks(b,vim.api.nvim_create_namespace('input-tools.view'),0,-1,{details=true})>=4")
+        keys("<Esc>")
         lua("input.setup()")
         lua("vim.api.nvim_buf_set_lines(0, 0, -1, false, {''}); "
             "_G.InputToolsComplete = function(start) return start == 1 and 0 or {'apple', 'apricot'} end; "

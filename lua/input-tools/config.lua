@@ -15,7 +15,15 @@ M.defaults = {
     zindex = 250,
   },
   profiles = {},
-  popupmenu = { enabled = true, max_height = 8, max_width = 60 },
+  popupmenu = {
+    enabled = true,
+    border = "single",
+    min_width = 1,
+    max_height = 8,
+    max_width = 60,
+    align = "frame",
+    scrollbar = true,
+  },
 }
 
 local borders = { "rounded", "single", "double", "solid", "none", "" }
@@ -62,7 +70,12 @@ end
 
 function M.resolve(opts)
   local config = vim.tbl_deep_extend("force", vim.deepcopy(M.defaults), opts or {})
-  for _, value in ipairs({ config.notifications, config.status, config.popupmenu.enabled }) do
+  for _, value in ipairs({
+    config.notifications,
+    config.status,
+    config.popupmenu.enabled,
+    config.popupmenu.scrollbar,
+  }) do
     assert(type(value) == "boolean", "notifications, status and popupmenu.enabled must be booleans")
   end
   assert(
@@ -79,7 +92,16 @@ function M.resolve(opts)
     assert(type(profile) == "table", "profile must be a table")
     window(M.window(config, kind))
   end
-  for _, key in ipairs({ "max_width", "max_height" }) do
+  assert(vim.tbl_contains(borders, config.popupmenu.border), "unsupported popupmenu border")
+  assert(
+    vim.tbl_contains({ "frame", "cursor" }, config.popupmenu.align),
+    "popupmenu.align must be frame or cursor"
+  )
+  assert(
+    config.popupmenu.min_width <= config.popupmenu.max_width,
+    "popupmenu.min_width must be <= max_width"
+  )
+  for _, key in ipairs({ "min_width", "max_width", "max_height" }) do
     assert(integer(config.popupmenu[key], 1), "popupmenu." .. key .. " must be a positive integer")
   end
   return config

@@ -14,6 +14,10 @@
 ---@field zindex? integer Float stacking priority.
 
 ---@class input_tools.PopupmenuConfig
+---@field border? 'rounded'|'single'|'double'|'solid'|'none'|''
+---@field min_width? integer Minimum requested native menu width.
+---@field align? 'frame'|'cursor' Command-line menu alignment; insert mode remains cursor-relative.
+---@field scrollbar? boolean Show the visible range of a scrolling native menu.
 ---@field enabled? boolean Own the native command-line and insert-mode popup menus.
 ---@field max_height? integer Maximum visible completion items.
 ---@field max_width? integer Maximum menu content width in display cells.

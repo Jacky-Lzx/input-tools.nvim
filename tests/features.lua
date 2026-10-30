@@ -38,13 +38,6 @@ assert(not pcall(config.resolve, { profiles = { search = { width = 0 } } }))
 assert(not pcall(config.resolve, { profiles = { typo = {} } }))
 assert(not pcall(config.resolve, { window = { min_width = 90 } }))
 assert(not pcall(config.resolve, { window = { col = -math.huge } }))
-vim.o.columns, vim.o.lines = 18, 6
-view.render(state("/"), opts)
-local box = vim.api.nvim_win_get_config(view.cursor.win)
-assert(box.col >= 0 and box.col + box.width + 2 <= 18)
-view.close()
-print("features: per-kind profiles, fractional widths, titles and small-screen clamps passed")
-
 -- Chunk colors use group IDs, never reinterpret screen attribute IDs as groups.
 local rich = require("input-tools.text")
 vim.api.nvim_set_hl(0, "InputToolsTestRed", { fg = "#ff1234" })
@@ -62,7 +55,6 @@ model.event(colored, "cmdline_block_show", { { { { 0, "context", red } } } }, tr
 local cmd = model.command(colored)
 eq(2, cmd.highlights[#cmd.highlights].row)
 eq(4, cmd.highlights[#cmd.highlights].col)
-vim.o.columns, vim.o.lines = 100, 32
 view.render(colored, config.resolve())
 local buf = vim.api.nvim_win_get_buf(view.cursor.win)
 local extmarks = vim.api.nvim_buf_get_extmarks(
@@ -75,3 +67,10 @@ local extmarks = vim.api.nvim_buf_get_extmarks(
 assert(#extmarks >= 3)
 view.close()
 print("highlights: multiline context, Unicode ranges and special-character edits passed")
+
+vim.o.columns, vim.o.lines = 18, 6
+view.render(state("/"), opts)
+local box = vim.api.nvim_win_get_config(view.cursor.win)
+assert(box.col >= 0 and box.col + box.width + 2 <= 18)
+view.close()
+print("features: per-kind profiles, fractional widths, titles and small-screen clamps passed")

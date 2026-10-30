@@ -30,6 +30,12 @@ With popupmenu.enabled=true both native command-line and insert completion menus
 are drawn here. Neovim still owns selection/acceptance keys and completion
 sources. For command-line popup completion, use wildoptions=pum and wildmode=full.
 The plugin does not change these options or provide syntax parsing.
+Native popupmenu options: border="single", min_width=1, max_width=60,
+max_height=8, align="frame" (or "cursor" for command-argument anchoring),
+scrollbar=true. Insert menus remain cursor-relative. Long candidates are clipped
+by display cells, with a reserved scrollbar column when items overflow. Menus
+choose available space and shrink without overlapping the input. Blink uses its
+own appearance settings; its adapter shifts wide menus left near the screen edge.
 
 Input-specific layouts: profiles.command/search/input/expression/confirm are
 window overrides for :, / and ?, input(), = and interactive prompts respectively.

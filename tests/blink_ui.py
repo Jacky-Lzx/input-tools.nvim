@@ -59,6 +59,16 @@ def main():
         keys("<Esc>")
         lua("input.setup({window={row=3}})")
 
+        # Input without a border and close to the right edge: Blink may shift
+        # left to fit, but neither frame crosses the input vertically.
+        lua("input.setup({window={row=3,width=20,border='none',col=100}})")
+        keys(":he")
+        palette, menu = window("input-tools-command"), window("blink-cmp-menu")
+        assert palette and menu and menu['row'] >= palette['row'] + palette['height'], (palette, menu)
+        assert menu['col'] >= 0 and menu['col'] + menu['width'] + 2 <= 120, menu
+        keys("<Esc>")
+        lua("input.setup({window={row=3}})")
+
         # Insert completion keeps Blink's native cursor-relative positioning.
         lua("vim.api.nvim_buf_set_lines(0,0,-1,false,{'alpha unique', ''}); vim.api.nvim_win_set_cursor(0,{2,0})")
         keys("ial")

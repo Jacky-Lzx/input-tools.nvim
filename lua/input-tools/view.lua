@@ -36,6 +36,8 @@ function M.highlights()
     Menu = "Pmenu",
     Selection = "PmenuSel",
     Status = "ModeMsg",
+    Scrollbar = "PmenuSbar",
+    Thumb = "PmenuThumb",
   }) do
     api.nvim_set_hl(0, "InputTools" .. name, { default = true, link = target })
   end
@@ -186,25 +188,35 @@ function M.render(s, config)
   end
 
   local menu = s.menu
+  local options = config.popupmenu
+  local menu_edge = (options.border == "none" or options.border == "") and 0 or 2
   local menu_height, menu_row
   if menu and menu.grid == -1 and anchor then
     local below_row = anchor.row + anchor.height + edge
-    local above, below = math.max(0, anchor.row - 2), math.max(0, rows - below_row - 2)
-    local use_below = (anchor.row < rows / 2 and below > 0) or above == 0
+    local above, below =
+      math.max(0, anchor.row - menu_edge), math.max(0, rows - below_row - menu_edge)
+    local desired = math.min(options.max_height, #menu.items)
+    local use_below = below >= desired or (above < desired and below >= above)
     local available = use_below and below or above
     if available == 0 then
-      menu = nil -- No non-overlapping space for a bordered menu.
+      menu = nil
     else
-      menu_height = math.min(config.popupmenu.max_height, #menu.items, available)
-      menu_row = use_below and below_row or (anchor.row - menu_height - 2)
+      menu_height = math.min(desired, available)
+      menu_row = use_below and below_row or (anchor.row - menu_height - menu_edge)
     end
   end
-  if menu and #menu.items > 0 and (menu.grid ~= -1 or anchor) then
-    local height = menu_height
-      or math.min(config.popupmenu.max_height, #menu.items, math.max(1, rows - 2))
+  if
+    menu
+    and #menu.items > 0
+    and (menu.grid ~= -1 or anchor)
+    and rows > menu_edge
+    and columns > menu_edge
+  then
+    local height = menu_height or math.min(options.max_height, #menu.items, rows - menu_edge)
     local first = math.max(1, menu.selected - height + 2)
     first = math.min(first, math.max(1, #menu.items - height + 1))
-    local lines, width = {}, 1
+    local lines, width = {}, options.min_width
+    local scroll = options.scrollbar and #menu.items > height
     for i = first, math.min(#menu.items, first + height - 1) do
       local entry = menu.items[i]
       local value = (entry[1] or "")
@@ -212,32 +224,50 @@ function M.render(s, config)
         .. ((entry[3] or "") ~= "" and ("  " .. entry[3]) or "")
       value = value:gsub("[\n\r\t]", " ")
       lines[#lines + 1] = value
-      width = math.max(width, display_width(value))
+      width = math.max(width, display_width(value) + 1)
     end
-    width = math.max(1, math.min(width + 1, config.popupmenu.max_width, columns - 2))
+    width =
+      math.max(1, math.min(width + (scroll and 1 or 0), options.max_width, columns - menu_edge))
+    -- Truncate by cells, preserving UTF-8/combining characters and reserving
+    -- the last cell for a scrollbar. This also bounds very long candidates.
+    local text_width = width - (scroll and 1 or 0)
+    for i, line in ipairs(lines) do
+      local value = ""
+      for char in line:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+        if display_width(value .. char) > text_width then
+          break
+        end
+        value = value .. char
+      end
+      lines[i] = value .. string.rep(" ", width - display_width(value))
+    end
     local row, col = menu.row, menu.col
     if menu.grid == -1 then
       row = menu_row
-      local left = api.nvim_win_call(anchor.item.win, vim.fn.winsaveview).leftcol
-      col = anchor.col
-        + display_width(anchor.command.prefix .. anchor.command.content:sub(1, menu.col))
-        - left
+      if options.align == "frame" then
+        col = anchor.col - edge / 2
+      else
+        local left = api.nvim_win_call(anchor.item.win, vim.fn.winsaveview).leftcol
+        col = anchor.col
+          + display_width(anchor.command.prefix .. anchor.command.content:sub(1, menu.col))
+          - left
+      end
     elseif menu.grid and menu.grid > 1 then
-      local position = api.nvim_win_get_position(0)
-      row, col = row + position[1], col + position[2]
+      local pos = api.nvim_win_get_position(0)
+      row, col = row + pos[1], col + pos[2]
     end
     if menu.grid ~= -1 then
       row = row + 1
-      if row + height + 2 > rows then
-        row = math.max(0, row - height - 3)
+      if row + height + menu_edge > rows then
+        row = math.max(0, row - height - menu_edge - 1)
       end
     end
-    row, col =
-      math.max(0, math.min(row, rows - height - 2)), math.max(0, math.min(col, columns - width - 2))
+    row = math.max(0, math.min(row, rows - height - menu_edge))
+    col = math.max(0, math.min(col, columns - width - menu_edge))
     local item = surface(
       "menu",
       lines,
-      geometry(row, col, width, height, "single", config.window.zindex + 1),
+      geometry(row, col, width, height, options.border, window.zindex + 1),
       config
     )
     local selected = menu.selected + 2 - first
@@ -249,6 +279,19 @@ function M.render(s, config)
         0,
         { end_row = selected, hl_group = "InputToolsSelection", hl_eol = true }
       )
+    end
+    if scroll then
+      local thumb = math.max(1, math.floor(height * height / #menu.items))
+      local top = math.floor((first - 1) * (height - thumb) / math.max(1, #menu.items - height))
+      for i = 0, height - 1 do
+        api.nvim_buf_set_extmark(item.buf, ns, i, #lines[i + 1] - 1, {
+          virt_text = {
+            { "▐", i >= top and i < top + thumb and "InputToolsThumb" or "InputToolsScrollbar" },
+          },
+          virt_text_pos = "overlay",
+          priority = 210,
+        })
+      end
     end
   else
     close("menu")

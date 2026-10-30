@@ -59,7 +59,27 @@ function M.menu_config(opts)
         end
         -- Blink adds start_col and its north/south offset after this callback.
         local row = box.direction == "s" and (box.row + box.height - 1) or box.row
-        return { row, box.col - start_col + alignment }
+        local left = box.col
+        local win = type(menu) == "table" and menu.win
+        if win and type(win.get_win) == "function" then
+          local ok, id = pcall(win.get_win, win)
+          if ok and id and vim.api.nvim_win_is_valid(id) then
+            local c = vim.api.nvim_win_get_config(id)
+            local border = c.border or {}
+            local function present(index)
+              local value = border[index]
+              if type(value) == "table" then
+                value = value[1]
+              end
+              return value and value ~= "" and 1 or 0
+            end
+            local width = c.width
+              + math.max(present(1), present(7), present(8))
+              + math.max(present(3), present(4), present(5))
+            left = math.max(0, math.min(left, vim.o.columns - width))
+          end
+        end
+        return { row, left - start_col + alignment }
       end
       if type(original_position) == "function" then
         return original_position(...)

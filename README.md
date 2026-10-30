@@ -126,6 +126,10 @@ require("input-tools").setup({
   },
   popupmenu = {
     enabled = true, -- Applies to native command-line AND insert-mode completion.
+    border = "single",
+    min_width = 1,
+    align = "frame", -- "cursor" aligns with the current command argument.
+    scrollbar = true,
     max_height = 8,
     max_width = 60,
   },
@@ -136,6 +140,13 @@ The command line is centered near the bottom by default. Set `window.row = 3`
 for a top-centered command palette like Noice's `command_palette` preset. The
 position is clamped on small screens. Completion menus appear below a top input
 or above a bottom input, falling back to available space without overlapping it.
+Native menus align their outer left frame with the input by default; `align="cursor"`
+anchors to the completion start instead. Insert-mode menus remain cursor-relative.
+Borders and width limits apply independently of the input. Overflowing candidates
+are clipped by display cells and a scrollbar shows the visible range. Menus prefer
+a side with enough space, shrink when necessary and stay outside the input frame.
+Blink keeps its own border/width/scrollbar options; its adapter also shifts a wide
+menu left when the input sits near the right screen edge.
 Long input scrolls horizontally
 with the cursor; multiline prompts/context use at most `max_height` rows. Menu
 selection, acceptance and cancellation use Neovim's existing keys and settings.
