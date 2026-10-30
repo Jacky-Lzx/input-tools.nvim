@@ -1,0 +1,77 @@
+*input-tools.txt*  Command-line and prompt UI for Neovim 0.10+
+
+SETUP                                                        *input-tools*
+>
+    require("input-tools").setup({})
+<
+No runtime dependencies. The plugin draws the native command line near the
+bottom and leaves editing, history, search and completion with Neovim. require()
+alone does not attach UI. It does not replace vim.ui.input/select/notify or keys.
+
+CONFIGURATION                                         *input-tools-config*
+>
+    require("input-tools").setup({
+      notifications = true,
+      return_prompt = "auto", -- "show" waits for Enter.
+      status = true,
+      window = {
+        border = "rounded", max_width = 80, max_height = 8,
+        bottom = 1, winblend = 0, zindex = 250,
+      },
+      popupmenu = { enabled = true, max_height = 8, max_width = 60 },
+    })
+<
+Long commands scroll horizontally. Prompt/context height is bounded. Nested
+command lines, expression input and multiline definition blocks are supported.
+With popupmenu.enabled=true both native command-line and insert completion menus
+are drawn here. Neovim still owns selection/acceptance keys and completion
+sources. For command-line popup completion, use wildoptions=pum and wildmode=full.
+The plugin does not change these options or provide syntax parsing.
+
+The default return_prompt=auto acknowledges only hit-enter prompts. Confirm,
+numbered choice and substitution prompts always wait for the user's answer.
+return_prompt=show displays the hit-enter prompt until answered. Externalized
+showmode/showcmd/ruler widgets are displayed unless status=false.
+Old unnamed numbered-choice messages in r/rm prompt states are also interactive;
+they stay visible while inputlist() waits for the user's number.
+
+Highlight groups: InputToolsNormal, InputToolsBorder, InputToolsPrompt,
+InputToolsMenu, InputToolsSelection, InputToolsStatus. Colors link to native
+theme groups and may be overridden using nvim_set_hl/ColorScheme autocmds.
+
+NOTIFICATIONS                                  *input-tools-notifications*
+>
+    require("notification-tools").setup({ messages = { enabled = true } })
+    require("input-tools").setup()
+<
+Input-tools owns command-line/prompt/completion UI, notification-tools owns
+non-interactive messages and notifications. No hard dependency: input-tools
+joins only an already loaded notification-tools instance. Without a handoff,
+native messages retain their current owner. notifications=false disables joining.
+
+The renderer attaches before calling notification-tools.attach_messages(). Its
+returned handle is released before this renderer stops. Both loading orders and
+notification reconfiguration work with NotificationToolsReady User events. Older
+versions lacking that event need notifications loaded first or a manual call to
+sync_notifications() after notification setup. Repeated input setup replaces its
+old instance and acquires a fresh handle.
+
+Disable competing Noice command-line/message/popup-menu owners. Connected GUIs
+already externalizing these widgets are detected before attachment. Lua owners
+cannot be enumerated automatically. No notification UI is bundled here.
+
+API                                                      *input-tools-api*
+
+setup(opts?)             Validate, replace the old instance, attach and join.
+teardown()               Release message handle, UI callback, floats/autocmds.
+is_enabled()             True while our UI subscription is active.
+status()                 { enabled=boolean, notifications=boolean }.
+sync_notifications()     Retry the handoff after an already loaded producer setup.
+
+Invalid configuration preserves the working instance. UI errors disable this
+renderer and release messages to restore native input. Stale scheduled callbacks
+cannot affect a newer instance. No idle refresh timer is retained.
+
+See :checkhealth input-tools. vim.ui_attach and nvim__redraw are experimental.
+
+ vim:tw=78:ts=8:noet:ft=help:norl:

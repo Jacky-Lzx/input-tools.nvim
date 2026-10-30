@@ -1,0 +1,7 @@
+-- Static-analysis fixtures, not executed.
+local input = require("input-tools")
+input.setup({ notifications = "yes" }) -- expect-type-error
+input.setup({ return_prompt = "always" }) -- expect-type-error
+input.setup({ window = { border = "bad" } }) -- expect-type-error
+input.setup({ popupmenu = { enabled = 1 } }) -- expect-type-error
+input.setup({ window = { max_height = "large" } }) -- expect-type-error
