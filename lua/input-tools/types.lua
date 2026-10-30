@@ -9,7 +9,7 @@
 ---@field title? string|false Optional centered border title.
 ---@field max_height? integer Maximum context/prompt rows.
 ---@field bottom? integer Bottom margin in display rows.
----@field row? integer Zero-based top offset; omit to use the bottom margin.
+---@field row? integer|false Zero-based top offset; false explicitly uses the bottom margin.
 ---@field winblend? integer Transparency, 0..100.
 ---@field zindex? integer Float stacking priority.
 
@@ -37,6 +37,25 @@
 ---@field profiles? input_tools.Profiles Overrides merged over window for each input kind.
 ---@field popupmenu? input_tools.PopupmenuConfig
 
+---@class input_tools.ScreenPosition
+---@field row integer Zero-based screen row.
+---@field col integer Zero-based screen column; text origin can be negative while scrolling.
+
+---@class input_tools.Layout
+---@field win integer Visible input window ID.
+---@field buf integer Input buffer ID.
+---@field kind 'command'|'search'|'input'|'expression'|'confirm'
+---@field editable boolean Native editing engine is awaiting input.
+---@field row integer Zero-based outer frame row.
+---@field col integer Zero-based outer frame column.
+---@field width integer Content width in display cells.
+---@field height integer Content height in display cells.
+---@field outer_width integer Width including border.
+---@field outer_height integer Height including border.
+---@field border { top: integer, right: integer, bottom: integer, left: integer }
+---@field text input_tools.ScreenPosition Native text origin, adjusted for scrolling.
+---@field cursor input_tools.ScreenPosition Actual cursor position on screen.
+
 ---@class input_tools.BlinkStatus
 ---@field loaded boolean Whether Blink is already loaded.
 ---@field visible boolean Whether its completion menu is visible.
@@ -46,5 +65,6 @@
 ---@field enabled boolean Whether input-tools owns its UI subscription.
 ---@field notifications boolean Whether it has an active notification-tools message handle.
 ---@field window? integer Visible input window.
+---@field layout? input_tools.Layout Current layout snapshot.
 ---@field blink input_tools.BlinkStatus
 ---@field last_error? string Last renderer failure; cleared by successful setup.

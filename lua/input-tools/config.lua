@@ -50,7 +50,10 @@ local function window(opts)
   end
   assert(opts.min_width <= opts.max_width, "min_width must be <= max_width")
   assert(opts.winblend <= 100, "winblend must be <= 100")
-  assert(opts.row == nil or integer(opts.row, 0), "window.row must be a nonnegative integer or nil")
+  assert(
+    opts.row == nil or opts.row == false or integer(opts.row, 0),
+    "window.row must be a nonnegative integer, false or nil"
+  )
   assert(integer(opts.col, -math.huge), "window.col must be a finite integer offset")
   assert(
     type(opts.title) == "string" or opts.title == false,

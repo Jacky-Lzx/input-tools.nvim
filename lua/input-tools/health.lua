@@ -31,6 +31,18 @@ function M.check()
   end
   if status.window then
     vim.health.info("Visible input window: " .. status.window)
+    if status.layout then
+      local box = status.layout
+      vim.health.info(
+        ("Layout: %s at row=%d col=%d, frame=%dx%d"):format(
+          box.kind,
+          box.row,
+          box.col,
+          box.outer_width,
+          box.outer_height
+        )
+      )
+    end
   end
   if package.loaded["noice"] then
     vim.health.warn(

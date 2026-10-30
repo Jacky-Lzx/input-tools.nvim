@@ -23,7 +23,8 @@ CONFIGURATION                                         *input-tools-config*
 <
 Long commands scroll horizontally. Prompt/context height is bounded.
 window.row optionally sets a zero-based top offset (e.g. 3 for a top-centered
-command palette), overriding bottom placement. Small screens clamp the position.
+command palette), overriding bottom placement. Set row=false in a profile to
+explicitly restore bottom placement despite a top offset in the base window. Small screens clamp the position.
 Completion menus use the available space below/above the input without overlap.
 Nested command lines, expression input and multiline definition blocks are supported.
 With popupmenu.enabled=true both native command-line and insert completion menus
@@ -120,11 +121,32 @@ status()                 enabled, notifications, window, blink and last_error.
 :InputTools enable|disable|toggle|status provides these controls after setup.
 The command remains available when disabled. Completion lists its subcommands.
 get_window()             Visible input window ID, or nil; does not load UI.
+get_layout()             Independent visible layout snapshot, or nil.
 sync_notifications()     Retry the handoff after an already loaded producer setup.
 
 Invalid configuration preserves the working instance. UI errors disable this
 renderer and release messages to restore native input. Stale scheduled callbacks
 cannot affect a newer instance. No idle refresh timer is retained.
+
+LAYOUT EVENTS                                        *input-tools-events*
+
+get_layout() returns win, buf, kind, editable, row, col, width, height,
+outer_width, outer_height, border={top,right,bottom,left}, text={row,col} and
+cursor={row,col}. All coordinates are zero-based screen cells. row/col describe
+the outer frame; width/height exclude borders. text is the native text origin
+adjusted for scrolling (column may be negative); cursor is its actual screen
+position. No command contents are exposed. Returned values are copies.
+
+User InputToolsOpen: input window became visible.
+User InputToolsLayoutChanged: geometry, kind, scrolling or cursor changed.
+User InputToolsClose: input closed; event.data.layout is the previous snapshot.
+
+All three provide event.data.layout. They are coalesced and scheduled after
+rendering, outside UI callbacks. Open+close within one event-loop turn may emit
+nothing. get_layout() returns nil immediately after close/disable. A close
+snapshot may contain an already-invalid window. Handler failures are reported
+without disabling the renderer; reentrant disable/reconfiguration is supported.
+Blink uses the public layout API for the input anchor.
 
 See :checkhealth input-tools. vim.ui_attach and nvim__redraw are experimental.
 

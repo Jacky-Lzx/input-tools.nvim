@@ -13,6 +13,8 @@ local api = input.setup(opts)
 local status = api.status()
 ---@type boolean
 local enabled = api.is_enabled()
+---@type input_tools.Layout|nil
+local layout = api.get_layout()
 ---@type integer|nil
 local window = api.get_window()
 api.disable()
@@ -20,4 +22,4 @@ api.enable()
 api.toggle()
 api.sync_notifications()
 api.teardown()
-return { status = status, enabled = enabled, window = window }
+return { status = status, enabled = enabled, window = window, layout = layout }

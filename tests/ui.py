@@ -50,14 +50,24 @@ def main():
         lua("vim.opt.rtp:prepend(vim.fn.getcwd()); input = require('input-tools'); input.setup(); "
             "vim.o.wildmode = 'full'; vim.o.wildoptions = 'pum'; vim.o.wildmenu = true")
         assert lua("return input.is_enabled() and not package.loaded['notification-tools']")
+        lua("layout_events={}; vim.api.nvim_create_autocmd('User',{pattern={'InputToolsOpen','InputToolsClose','InputToolsLayoutChanged'}, "
+            "callback=function(e) layout_events[#layout_events+1]={event=e.match,layout=vim.deepcopy(e.data.layout)} end})")
+        assert lua("return input.get_layout()") is None
         keys(":let g:unicode_result = '你好🙂'")
         assert "你好🙂" in text(), text()
+        assert lua("return layout_events[1].event=='InputToolsOpen' and layout_events[1].layout.kind=='command'")
+        assert lua("local l=input.get_layout(); local w=vim.api.nvim_win_get_config(l.win); "
+                   "return l.row==w.row and l.col==w.col and l.outer_width==w.width+2 and l.outer_height==w.height+2 "
+                   "and l.cursor.row>=l.row and l.cursor.col>=l.col")
+        assert lua("local l=input.get_layout(); l.row=-100; return input.get_layout().row~=-100 and l.content==nil")
         keys("<Left>")
         assert lua("local w = require('input-tools.view').cursor.win; return vim.api.nvim_win_get_cursor(w)[2] == vim.fn.getcmdpos()")
         cursor = lua("local c = require('input-tools.view').cursor; return vim.fn.screenpos(c.win, c.row, c.col + 1)")
         assert ui.cursor == [1, cursor["row"] - 1, cursor["col"] - 1], (ui.cursor, cursor)
         keys("<End><CR>")
         assert lua("return vim.g.unicode_result") == "你好🙂"
+        assert lua("return input.get_layout()") is None
+        assert lua("return layout_events[#layout_events].event=='InputToolsClose'")
         keys(":<Up>")
         assert "unicode_result" in command()
         keys("<Esc>")
@@ -92,10 +102,12 @@ def main():
         assert lua("return vim.g.block_result") == 7
         keys("q:")
         assert lua("return vim.fn.getcmdwintype()") == ":"
-        keys("<C-c><Esc>")
+        keys("<C-c>")
+        keys("<Esc>")
 
         lua("vim.api.nvim_buf_set_lines(0, 0, -1, false, {'needle one', 'needle two'}); vim.o.inccommand = 'split'")
         keys("/needle")
+        assert lua("return input.get_layout().kind") == "search", str(lua("return {layout=input.get_layout(),mode=vim.fn.mode(1),type=vim.fn.getcmdtype()}"))
         assert "/needle" in text(), text()
         keys("<CR>")
         keys(":%s/needle/replacement")
@@ -166,6 +178,22 @@ def main():
         lua("input.teardown()")
         print("UI: native editing/search/history, Unicode cursor, nested input, substitute preview, command/insert completion, resize and native restoration passed")
 
+        # Scheduled lifecycle handlers may disable the renderer safely. Their
+        # errors are reported without losing input ownership or looping.
+        lua("input.setup({window={row=3}}); layout_events={}; "
+            "vim.api.nvim_create_autocmd('User',{pattern='InputToolsOpen',once=true,callback=function() input.disable() end})")
+        keys(":echo")
+        assert not lua("return input.is_enabled()")
+        assert lua("return input.get_layout()") is None
+        assert lua("return layout_events[1].event=='InputToolsOpen' and layout_events[#layout_events].event=='InputToolsClose'")
+        keys("<Esc>")
+        lua("input.enable(); observer_error=false; "
+            "vim.api.nvim_create_autocmd('User',{pattern='InputToolsOpen',once=true,callback=function() observer_error=true; error('observer failure') end})")
+        keys(":echo")
+        assert lua("return input.is_enabled() and observer_error"), str(lua("return {enabled=input.is_enabled(),error=observer_error,mode=vim.fn.mode(1),cmd=vim.fn.getcmdline(),events=layout_events,errmsg=vim.v.errmsg}"))
+        keys("<Esc>")
+        lua("input.teardown()")
+
         notification_root = os.environ.get("NOTIFICATION_TOOLS_ROOT")
         if not notification_root:
             return
@@ -186,8 +214,10 @@ def main():
             "local a={...}; if e=='msg_show' and (a[1]=='confirm' or a[1]=='number_prompt' or a[1]=='confirm_sub' or a[1]=='return_prompt' and vim.g.await_return or a[1]=='' and require('input-tools.model').is_prompt(a[1])) "
             "or e=='cmdline_show' and (vim.fn.mode(1):sub(1,1)=='r' or (a[4] or ''):find('__confirm', 1, true) or (a[4] or ''):find('__pick', 1, true)) "
             "then vim.rpcnotify(1, 'test-prompt') end end)")
+        lua("input.setup({profiles={confirm={title='Decision'}}})")
         prompt(":lua vim.g.prompt_result = vim.fn.confirm('__confirm-question', '&Yes\\n&No', 2)<CR>", "n", 2)
         assert any("__confirm-question" in frame for frame in ui.frames), "confirmation text was never drawn"
+        assert any("Decision" in frame for frame in ui.frames), "confirm profile was not used by the native prompt"
         assert not any("__confirm-question" in r["message"] for r in lua("return notifications.history()"))
         prompt(":lua vim.g.prompt_result = vim.fn.inputlist({'__pick-question', '1. One', '2. Two'})<CR>", "2<CR>", 2)
         assert any("__pick-question" in frame for frame in ui.frames), "inputlist text was never drawn"

@@ -35,6 +35,7 @@ function M.event(s, event, args, popupmenu)
       content = M.text(args[1]),
       chunks = vim.deepcopy(args[1]),
       prompt_hl = args[7],
+      interactive = not vim.in_fast_event() and vim.fn.mode(1):sub(1, 1) == "r",
       pos = args[2],
       firstc = args[3],
       prompt = args[4] or "",
@@ -153,7 +154,7 @@ function M.command(s)
     prefix = prefix,
     content = content,
     editable = current ~= nil,
-    kind = not current and "confirm"
+    kind = (not current or current.interactive or s.prompt ~= nil) and "confirm"
       or (current.firstc == "/" or current.firstc == "?") and "search"
       or current.firstc == "=" and "expression"
       or current.prompt ~= "" and "input"

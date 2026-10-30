@@ -21,6 +21,15 @@ function M.get_window()
   end
 end
 
+---Return a copy of the current layout. Coordinates are zero-based screen cells.
+---@return input_tools.Layout? layout
+function M.get_layout()
+  if session then
+    local events = package.loaded["input-tools.events"]
+    return events and events.get() or nil
+  end
+end
+
 ---Join only an installed, configured notification-tools instance; never load it.
 function M.sync_notifications()
   local s = session
@@ -54,6 +63,7 @@ function M.status()
     enabled = session ~= nil,
     notifications = session ~= nil and session.messages ~= nil and session.messages:is_active(),
     window = M.get_window(),
+    layout = M.get_layout(),
     blink = require("input-tools.blink").status(),
     last_error = last_error,
   }

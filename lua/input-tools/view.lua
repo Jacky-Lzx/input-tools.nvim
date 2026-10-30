@@ -52,6 +52,7 @@ local function close(name)
 end
 
 function M.close()
+  require("input-tools.events").set(nil)
   position(nil)
   for _, name in ipairs({ "command", "menu", "status" }) do
     close(name)
@@ -84,6 +85,7 @@ local function surface(name, lines, geometry, config)
       .. ",FloatBorder:InputToolsBorder"
   elseif not vim.deep_equal(item.geometry, geometry) then
     local updated = vim.tbl_extend("force", {}, geometry)
+    updated.title = geometry.title or "" -- Clear a title inherited from another input profile.
     updated.noautocmd = nil -- Neovim 0.10 accepts this only when opening a window.
     api.nvim_win_set_config(item.win, updated)
   end
@@ -145,7 +147,7 @@ function M.render(s, config)
     local first = math.max(1, command.row - height + 1)
     local lines = vim.list_slice(command.lines, first, first + height - 1)
     local row = math.max(0, rows - height - edge - config.window.bottom)
-    if config.window.row ~= nil then
+    if config.window.row ~= nil and config.window.row ~= false then
       row = math.max(0, math.min(config.window.row, rows - height - edge))
     end
     local col = math.max(
@@ -330,5 +332,30 @@ function M.render(s, config)
     pcall(api.nvim__redraw, { win = M.cursor.win, cursor = true, flush = true })
   end
   publish_position() -- Include any horizontal scrolling performed by redraw.
+  local layout
+  if anchor then
+    local saved = api.nvim_win_call(anchor.item.win, vim.fn.winsaveview)
+    local prefix = vim.split(command.prefix, "\n", { plain = true })
+    local cursor = vim.fn.screenpos(anchor.item.win, M.cursor.row, M.cursor.col + 1)
+    layout = {
+      win = anchor.item.win,
+      buf = anchor.item.buf,
+      kind = command.kind,
+      editable = command.editable,
+      row = anchor.row,
+      col = anchor.col - edge / 2,
+      width = anchor.width,
+      height = anchor.height,
+      outer_width = anchor.width + edge,
+      outer_height = anchor.height + edge,
+      border = { top = edge / 2, right = edge / 2, bottom = edge / 2, left = edge / 2 },
+      text = {
+        row = anchor.row + edge / 2 + M.cursor.row - saved.topline,
+        col = anchor.col + display_width(prefix[#prefix]) - saved.leftcol,
+      },
+      cursor = { row = cursor.row - 1, col = cursor.col - 1 },
+    }
+  end
+  require("input-tools.events").set(layout)
 end
 return M

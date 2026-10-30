@@ -191,7 +191,8 @@ require("input-tools").setup({
 
 `width` is a positive cell count or a fraction in `(0, 1]` of editor columns.
 It is bounded by `min_width`, `max_width` and available screen space. Without
-`width`, the existing `max_width` behavior is preserved. `col` is a signed offset
+`width`, the existing `max_width` behavior is preserved. `row=false` explicitly restores bottom placement in a profile even if the base
+window has a top offset. `col` is a signed offset
 from horizontal center. `title` is a centered border title (`false` by default);
 borderless windows omit it. Both position and size clamp on small screens.
 
@@ -206,6 +207,7 @@ input.toggle()
 input.is_enabled()         -- Whether our UI subscription is active.
 input.status()             -- Ownership, window, Blink state and last render error.
 input.get_window()         -- Visible input window ID, or nil; does not load UI.
+input.get_layout()         -- Independent snapshot of visible input geometry, or nil.
 input.sync_notifications() -- Retry the optional handoff after producer setup.
 input.teardown()           -- Release messages, UI subscription, floats/autocmds.
 ```
@@ -215,6 +217,35 @@ same controls. The command remains available while disabled. `status()` and
 `:checkhealth input-tools` inspect already-loaded Blink without activating it.
 A successful setup clears the recorded renderer error. Invalid reconfiguration
 preserves both the active instance and the configuration used by `enable()`.
+
+### Layout API and events
+
+`get_layout()` returns a copy containing `win`, `buf`, `kind`, `editable`,
+`row`, `col`, `width`, `height`, `outer_width`, `outer_height`, `border`, `text`
+and `cursor`. Rows/columns are **zero-based screen cells**. `row`/`col` are the
+outer frame origin; `width`/`height` exclude its border. `text` is the native
+command-text origin adjusted for scrolling (its column can be negative), and
+`cursor` is the actual screen cursor. No command contents are included.
+Closing or disabling the input makes the API return `nil` immediately.
+
+```lua
+vim.api.nvim_create_autocmd("User", {
+  pattern = { "InputToolsOpen", "InputToolsLayoutChanged", "InputToolsClose" },
+  callback = function(event)
+    local layout = event.data.layout
+    -- Open/change: use layout to position a companion UI.
+    -- Close: layout describes the previous input; its window may be invalid.
+  end,
+})
+```
+
+Events run on the next event-loop turn after rendering. Repeated changes are
+coalesced to the latest snapshot, so an input opened and closed within the same
+turn may produce no event. Open fires when an input window becomes visible;
+layout-changed covers geometry, input kind, scrolling and cursor movement.
+Close carries the previous snapshot. Callback mutations cannot alter renderer
+state; callback errors are reported without disabling input. The Blink adapter
+uses this public geometry API for the input anchor.
 
 No idle timer runs. UI events update the native input state and redraw the
 non-focusable floats; repeated identical events do not schedule redraw loops.

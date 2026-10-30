@@ -6,24 +6,13 @@ local adapters = setmetatable({}, { __mode = "k" })
 
 local function layout()
   local input = package.loaded["input-tools"]
-  local win = type(input) == "table" and type(input.get_window) == "function" and input.get_window()
-  if not win then
+  local box = type(input) == "table" and type(input.get_layout) == "function" and input.get_layout()
+  if not box then
     return
   end
-  local config = vim.api.nvim_win_get_config(win)
-  local function border(index)
-    local value = config.border and config.border[index]
-    if type(value) == "table" then
-      value = value[1]
-    end
-    return value and value ~= "" and 1 or 0
-  end
-  local height = config.height
-    + math.max(border(1), border(2), border(3))
-    + math.max(border(5), border(6), border(7))
-  local below = vim.o.lines - vim.o.cmdheight - config.row - height
-  local direction = below >= config.row and "s" or "n"
-  return { row = config.row, col = config.col, height = height, direction = direction }
+  local below = vim.o.lines - vim.o.cmdheight - box.row - box.outer_height
+  local direction = below >= box.row and "s" or "n"
+  return { row = box.row, col = box.col, height = box.outer_height, direction = direction }
 end
 
 ---Blink completion.menu callbacks for outer-frame alignment in command-line mode.
