@@ -116,11 +116,20 @@ end
 function M.render(s, config)
   local model = require("input-tools.model")
   local command = model.command(s)
+  local window = require("input-tools.config").window(config, command and command.kind or "command")
+  config = vim.tbl_extend("force", {}, config, { window = window })
   local edge = (config.window.border == "none" or config.window.border == "") and 0 or 2
   local columns, rows = math.max(1, vim.o.columns), math.max(1, vim.o.lines - vim.o.cmdheight)
   local anchor
   if command then
-    local width = math.max(1, math.min(config.window.max_width, columns - edge - 2))
+    local requested = window.width or window.max_width
+    if requested <= 1 then
+      requested = math.floor(columns * requested)
+    end
+    local width = math.max(
+      1,
+      math.min(math.max(window.min_width, requested), window.max_width, columns - edge - 2)
+    )
     local count = #command.lines
     if not command.editable then
       count = 0
@@ -136,13 +145,15 @@ function M.render(s, config)
     if config.window.row ~= nil then
       row = math.max(0, math.min(config.window.row, rows - height - edge))
     end
-    local col = math.max(0, math.floor((columns - width - edge) / 2))
-    local item = surface(
-      "command",
-      lines,
-      geometry(row, col, width, height, config.window.border, config.window.zindex),
-      config
+    local col = math.max(
+      0,
+      math.min(columns - width - edge, math.floor((columns - width - edge) / 2) + window.col)
     )
+    local box = geometry(row, col, width, height, window.border, window.zindex)
+    if edge > 0 and window.title ~= false and window.title ~= "" then
+      box.title, box.title_pos = window.title, "center"
+    end
+    local item = surface("command", lines, box, config)
     local cursor_row = math.min(#lines, math.max(1, command.row - first + 1))
     vim.wo[item.win].wrap, vim.wo[item.win].linebreak = not command.editable, not command.editable
     local cursor_col = math.min(command.col, #lines[cursor_row] - 1)

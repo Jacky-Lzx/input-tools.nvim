@@ -35,7 +35,7 @@ function M.event(s, event, args, popupmenu)
       content = M.text(args[1]),
       pos = args[2],
       firstc = args[3],
-      prompt = args[4],
+      prompt = args[4] or "",
       indent = args[5],
     })
   elseif event == "cmdline_pos" then
@@ -130,6 +130,11 @@ function M.command(s)
     prefix = prefix,
     content = content,
     editable = current ~= nil,
+    kind = not current and "confirm"
+      or (current.firstc == "/" or current.firstc == "?") and "search"
+      or current.firstc == "=" and "expression"
+      or current.prompt ~= "" and "input"
+      or "command",
   }
 end
 

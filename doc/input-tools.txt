@@ -31,6 +31,14 @@ are drawn here. Neovim still owns selection/acceptance keys and completion
 sources. For command-line popup completion, use wildoptions=pum and wildmode=full.
 The plugin does not change these options or provide syntax parsing.
 
+Input-specific layouts: profiles.command/search/input/expression/confirm are
+window overrides for :, / and ?, input(), = and interactive prompts respectively.
+window.width is a positive cell count or fraction in (0,1] of editor columns;
+min_width/max_width bound it, with screen space taking precedence. Without width,
+max_width retains its previous behavior. window.col offsets horizontal center.
+window.title is a centered border string, or false (default); no border omits it.
+Example: profiles = { search = { width = 0.4, title = "Search" } }.
+
 BLINK.CMP                                             *input-tools-blink*
 
 Blink's default completion.menu.cmdline_position reads vim.g.ui_cmdline_pos.

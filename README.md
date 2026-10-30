@@ -158,6 +158,28 @@ autocmd. The UI uses plain text and prompt accents; it does not add a syntax
 parser or a completion source. Its terminal cursor uses Neovim's experimental
 `nvim__redraw` cursor support, available in the supported versions.
 
+### Input-specific layouts
+
+`window` remains the shared default. Optional `profiles` override it for
+`command` (`:`), `search` (`/` and `?`), `input` (`input()`), `expression` (`=`)
+and `confirm` (interactive prompts). Existing configurations keep their layout.
+
+```lua
+require("input-tools").setup({
+  window = { row = 3 },
+  profiles = {
+    search = { width = 0.4, min_width = 24, max_width = 60, title = "Search" },
+    input = { width = 50, title = "Input" },
+  },
+})
+```
+
+`width` is a positive cell count or a fraction in `(0, 1]` of editor columns.
+It is bounded by `min_width`, `max_width` and available screen space. Without
+`width`, the existing `max_width` behavior is preserved. `col` is a signed offset
+from horizontal center. `title` is a centered border title (`false` by default);
+borderless windows omit it. Both position and size clamp on small screens.
+
 ## API and lifecycle
 
 ```lua
