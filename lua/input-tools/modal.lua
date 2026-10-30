@@ -88,10 +88,16 @@ local function update(a)
     api.nvim_win_set_config(a.win, changed)
     a.geometry = box
   end
-  vim.wo[a.win].winblend = w.winblend
+  if a.winblend ~= w.winblend then
+    vim.wo[a.win].winblend, a.winblend = w.winblend, w.winblend
+  end
   a.signature = signature(a)
   -- Run only from scheduled work, never inside the decoration provider.
-  vim.cmd.redraw()
+  local ok = api.nvim__redraw
+    and pcall(api.nvim__redraw, { win = a.win, valid = true, flush = true })
+  if not ok then
+    vim.cmd.redraw()
+  end
   if active ~= a or a.closed or not M.get_window() then
     return
   end
@@ -268,7 +274,7 @@ open_window = function(a)
     a.win = api.nvim_open_win(a.buf, true, box)
     a.geometry = box
     vim.wo[a.win].wrap, vim.wo[a.win].scrolloff, vim.wo[a.win].sidescrolloff = false, 0, 2
-    vim.wo[a.win].winblend = w.winblend
+    vim.wo[a.win].winblend, a.winblend = w.winblend, w.winblend
     vim.wo[a.win].winhighlight =
       "Normal:InputToolsNormal,FloatBorder:InputToolsBorder,FloatTitle:InputToolsTitle"
     local prompt = opts.prompt or ""

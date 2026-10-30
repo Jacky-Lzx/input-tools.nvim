@@ -11,6 +11,7 @@ nvim --headless -n -u NONE -i NONE --noplugin -l tests/events.lua
 python3 tests/ui.py
 python3 tests/cursor_ui.py
 python3 tests/modal_ui.py
+python3 tests/render_updates.py
 if [ -n "${INPUT_TOOLS_BLINK_ROOT:-}" ]; then
   python3 tests/blink_ui.py
 fi

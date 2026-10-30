@@ -49,7 +49,9 @@ local function close(name)
   surfaces[name] = nil
   if surface and api.nvim_win_is_valid(surface.win) then
     api.nvim_win_close(surface.win, true)
+    return true
   end
+  return false
 end
 
 function M.close()
@@ -62,6 +64,7 @@ function M.close()
 end
 
 local function surface(name, lines, geometry, config)
+  local dirty = false
   local item = surfaces[name]
   if
     item
@@ -77,10 +80,11 @@ local function surface(name, lines, geometry, config)
     local buf = api.nvim_create_buf(false, true)
     vim.bo[buf].bufhidden, vim.bo[buf].filetype = "wipe", "input-tools-" .. name
     local win = api.nvim_open_win(buf, false, geometry)
-    item = { win = win, buf = buf }
+    item = { win = win, buf = buf, wrap = false }
+    dirty = true
     surfaces[name] = item
     vim.wo[win].wrap, vim.wo[win].cursorline, vim.wo[win].scrolloff = false, false, 0
-    vim.wo[win].sidescrolloff = 2
+    vim.wo[win].sidescrolloff, vim.wo[win].linebreak = 2, false
     vim.wo[win].winhighlight = "Normal:InputTools"
       .. (name == "menu" and "Menu" or "Normal")
       .. ",FloatBorder:InputToolsBorder,FloatTitle:InputToolsTitle"
@@ -89,15 +93,47 @@ local function surface(name, lines, geometry, config)
     updated.title = geometry.title or "" -- Clear a title inherited from another input profile.
     updated.noautocmd = nil -- Neovim 0.10 accepts this only when opening a window.
     api.nvim_win_set_config(item.win, updated)
+    dirty = true
   end
   item.geometry = geometry
-  vim.wo[item.win].winblend = config.window.winblend
+  if item.winblend ~= config.window.winblend then
+    vim.wo[item.win].winblend = config.window.winblend
+    item.winblend, dirty = config.window.winblend, true
+  end
   if not vim.deep_equal(item.lines, lines) then
     api.nvim_buf_set_lines(item.buf, 0, -1, false, lines)
     item.lines = vim.deepcopy(lines)
+    item.marks_stale, dirty = true, true
   end
-  api.nvim_buf_clear_namespace(item.buf, ns, 0, -1)
-  return item
+  return item, dirty
+end
+
+local function highlights(item, marks)
+  if not item.marks_stale and vim.deep_equal(item.marks, marks) then
+    return false
+  end
+  if item.marks ~= nil or #marks > 0 then
+    api.nvim_buf_clear_namespace(item.buf, ns, 0, -1)
+  end
+  for _, mark in ipairs(marks) do
+    api.nvim_buf_set_extmark(item.buf, ns, mark[1], mark[2], mark[3])
+  end
+  item.marks, item.marks_stale = vim.deepcopy(marks), false
+  return true
+end
+
+local function flush(win, dirty)
+  if not dirty and not win then
+    return
+  end
+  if dirty or not win or not api.nvim__redraw then
+    vim.cmd.redraw()
+    return
+  end
+  local ok = pcall(api.nvim__redraw, { win = win, valid = true, flush = true })
+  if not ok then
+    vim.cmd.redraw()
+  end
 end
 
 local function geometry(row, col, width, height, border, zindex)
@@ -137,6 +173,7 @@ function M.render(s, config)
   end
   local columns, rows = math.max(1, vim.o.columns), math.max(1, vim.o.lines - vim.o.cmdheight)
   local anchor
+  local dirty = false
   M.source_anchor = command
       and command.input
       and command.input.position == "cursor"
@@ -188,23 +225,24 @@ function M.render(s, config)
     if edge > 0 and window.title ~= false and window.title ~= "" then
       box.title, box.title_pos = window.title, window.title_pos
     end
-    local item = surface("command", lines, box, config)
+    local item, changed = surface("command", lines, box, config)
+    dirty = dirty or changed
     local cursor_row = math.min(#lines, math.max(1, command.row - first + 1))
-    vim.wo[item.win].wrap, vim.wo[item.win].linebreak = not command.editable, not command.editable
+    if item.wrap ~= not command.editable then
+      item.wrap = not command.editable
+      vim.wo[item.win].wrap, vim.wo[item.win].linebreak = item.wrap, item.wrap
+      dirty = true
+    end
     local cursor_col = math.min(command.col, #lines[cursor_row] - 1)
     api.nvim_win_set_cursor(item.win, { cursor_row, math.max(0, cursor_col) })
+    local marks = {}
     for _, mark in ipairs(command.highlights) do
       local r = mark.row - first
       if r >= 0 and r < #lines then
-        api.nvim_buf_set_extmark(
-          item.buf,
-          ns,
-          r,
-          mark.col,
-          { end_col = mark.stop, hl_group = mark.hl }
-        )
+        marks[#marks + 1] = { r, mark.col, { end_col = mark.stop, hl_group = mark.hl } }
       end
     end
+    dirty = highlights(item, marks) or dirty
     anchor = {
       row = row,
       col = col + edge / 2,
@@ -215,7 +253,7 @@ function M.render(s, config)
     }
     M.cursor = { win = item.win, row = cursor_row, col = math.max(0, cursor_col) }
   else
-    close("command")
+    dirty = close("command") or dirty
     M.cursor = nil
   end
 
@@ -296,50 +334,56 @@ function M.render(s, config)
     end
     row = math.max(0, math.min(row, rows - height - menu_edge))
     col = math.max(0, math.min(col, columns - width - menu_edge))
-    local item = surface(
+    local item, changed = surface(
       "menu",
       lines,
       geometry(row, col, width, height, options.border, window.zindex + 1),
       config
     )
+    dirty = dirty or changed
+    local marks = {}
     local selected = menu.selected + 2 - first
     if selected >= 1 and selected <= #lines then
-      api.nvim_buf_set_extmark(
-        item.buf,
-        ns,
-        selected - 1,
-        0,
-        { end_row = selected, hl_group = "InputToolsSelection", hl_eol = true }
-      )
+      marks[#marks + 1] =
+        { selected - 1, 0, { end_row = selected, hl_group = "InputToolsSelection", hl_eol = true } }
     end
     if scroll then
       local thumb = math.max(1, math.floor(height * height / #menu.items))
       local top = math.floor((first - 1) * (height - thumb) / math.max(1, #menu.items - height))
       for i = 0, height - 1 do
-        api.nvim_buf_set_extmark(item.buf, ns, i, #lines[i + 1] - 1, {
-          virt_text = {
-            { "▐", i >= top and i < top + thumb and "InputToolsThumb" or "InputToolsScrollbar" },
+        marks[#marks + 1] = {
+          i,
+          #lines[i + 1] - 1,
+          {
+            virt_text = {
+              {
+                "▐",
+                i >= top and i < top + thumb and "InputToolsThumb" or "InputToolsScrollbar",
+              },
+            },
+            virt_text_pos = "overlay",
+            priority = 210,
           },
-          virt_text_pos = "overlay",
-          priority = 210,
-        })
+        }
       end
     end
+    dirty = highlights(item, marks) or dirty
   else
-    close("menu")
+    dirty = close("menu") or dirty
   end
 
   local status = config.status and not command and model.status(s) or ""
   if status ~= "" then
     local width = math.max(1, math.min(display_width(status), columns))
-    surface(
+    local _, changed = surface(
       "status",
       { status },
       geometry(math.max(0, rows - 1), columns - width, width, 1, "none", config.window.zindex),
       config
     )
+    dirty = dirty or changed
   else
-    close("status")
+    dirty = close("status") or dirty
   end
   local function publish_position()
     if anchor and command.editable then
@@ -357,7 +401,7 @@ function M.render(s, config)
   end
   -- Consumers can reposition in WinResized/WinScrolled during this redraw.
   publish_position()
-  vim.cmd.redraw()
+  flush(M.cursor and M.cursor.win, dirty)
   if M.cursor and api.nvim__redraw then
     pcall(api.nvim__redraw, { win = M.cursor.win, cursor = true, flush = true })
   end
