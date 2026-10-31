@@ -14,6 +14,22 @@ Requires **Neovim 0.10+**. No runtime dependencies.
 - Optional cooperation with notification-tools; ordinary messages stay out of this plugin.
 - Resize/theme updates, repeated setup/teardown and restoration of the native UI.
 
+## Everyday workflows
+
+Real Neovim 0.12.6 terminal screenshots from an isolated Lua project. The demo uses
+`habamax` with explicit float highlights; the plugin follows your own colorscheme.
+The rename input sends the accepted name to native LSP and a real LuaLS server.
+
+| Native search | Confirm individual replacements |
+| --- | --- |
+| ![Native forward search for timeout_ms](docs/screenshots/search.png) | ![Native substitute confirmation while reviewing a Lua configuration](docs/screenshots/replace-confirm.png) |
+| **Choose an export format** | **Create a file with a space-containing path** |
+| ![Persistent native vim.ui.select choices for export format](docs/screenshots/select.png) | ![Native input API showing notes/release notes.md](docs/screenshots/file-input.png) |
+| **Rename beside the source cursor** | **Confirm unsaved changes before quitting** |
+| ![Vim-mode rename input used with a real LuaLS server](docs/screenshots/rename.png) | ![Unsaved-file quit confirmation after the semantic rename](docs/screenshots/quit-confirm.png) |
+
+[Run the scenario checks or reproduce these screenshots](docs/workflows.md).
+
 ## Install
 
 With lazy.nvim:
@@ -381,6 +397,8 @@ sh tests/run.sh
 NOTIFICATION_TOOLS_ROOT=../notification-tools.nvim sh tests/run.sh
 INPUT_TOOLS_BLINK_ROOT=/path/to/blink.cmp sh tests/run.sh
 python3 scripts/check_types.py
+# Optional: semantic rename against a real LuaLS server.
+INPUT_TOOLS_LUA_LS="$(command -v lua-language-server)" python3 tests/workflow_ui.py
 ```
 
 Runtime tests require Neovim, Python 3 and StyLua. Optional type checks require
