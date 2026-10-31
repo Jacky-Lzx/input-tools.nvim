@@ -15,7 +15,7 @@ M.defaults = {
     winblend = 0,
     zindex = 250,
   },
-  profiles = {},
+  profiles = { confirm = { width = 60, title = "Confirm", title_pos = "left" } },
   popupmenu = {
     enabled = true,
     border = "single",

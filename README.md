@@ -158,7 +158,11 @@ With popup-menu capture disabled, Neovim/another owner controls menu display.
 Hit-enter prompts are acknowledged automatically by default; this avoids an
 extra pause for messages already shown in notification-tools. Set
 `return_prompt="show"` to wait for the user's Enter key. Confirmations, numbered
-choices and substitution decisions always wait for the user's answer.
+choices and substitution decisions always wait for the user's answer. Confirmation
+bodies remain visible with their choices until answered; long paths wrap to fit.
+The default confirm profile uses a 60-cell content width and a left-aligned
+`Confirm` title. Override `profiles.confirm` to change its size or title without
+changing the command line. Native save/discard/cancel shortcuts are unchanged.
 On older Neovim, unnamed messages emitted in a native `r`/`rm` prompt state are
 treated as interactive too; this keeps `inputlist()` choices visible while the
 editor waits for a number.

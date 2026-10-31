@@ -7,6 +7,17 @@ function M.is_prompt(kind)
     or (kind == "" and not vim.in_fast_event() and vim.fn.mode(1):sub(1, 1) == "r")
 end
 
+-- Newer Neovim keeps an interactive cmdline active while waiting for a choice.
+-- Its preceding msg_show body belongs to that same dialog until cmdline_hide.
+function M.prompt_active(s)
+  for _, entry in pairs(s.levels) do
+    if entry.interactive then
+      return true
+    end
+  end
+  return false
+end
+
 function M.text(chunks)
   local parts = {}
   for _, chunk in ipairs(chunks or {}) do

@@ -230,7 +230,7 @@ function M.setup(opts)
         else
           -- In old Nvim the prompt runs a blocking getchar loop, not cmdline_*.
           vim.schedule(function()
-            if session == s and s.model.prompt == prompt then
+            if session == s and s.model.prompt == prompt and not model.prompt_active(s.model) then
               s.model.prompt = nil
               render(s)
             end

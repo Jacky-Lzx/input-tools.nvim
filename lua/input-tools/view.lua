@@ -147,8 +147,9 @@ function M.render(s, config)
     or nil
   M.source_point = nil
   if command then
+    local wrap = not command.editable or command.kind == "confirm"
     local box, _, point = layout_tools.input(window, function(width)
-      if command.editable then
+      if not wrap then
         return #command.lines
       end
       local count = 0
@@ -164,10 +165,22 @@ function M.render(s, config)
     local item, changed = surface("command", lines, box, window)
     dirty = dirty or changed
     local cursor_row = math.min(#lines, math.max(1, command.row - first + 1))
-    if item.wrap ~= not command.editable then
-      item.wrap = not command.editable
+    if item.wrap ~= wrap then
+      item.wrap = wrap
       vim.wo[item.win].wrap, vim.wo[item.win].linebreak = item.wrap, item.wrap
       dirty = true
+    end
+    if wrap then
+      -- Measure with Neovim's actual word/Unicode wrapping, not byte lengths.
+      -- It also handles a long filename in a confirmation body above the choices.
+      local count = api.nvim_win_text_height(item.win, { start_row = 0, end_row = #lines - 1 }).all
+      local measured = layout_tools.input(window, count, M.source_anchor)
+      if not vim.deep_equal(measured, box) then
+        box = measured
+        row, col, width, height = box.row, box.col, box.width, box.height
+        local _, resized = surface("command", lines, box, window)
+        dirty = resized or dirty
+      end
     end
     local cursor_col = math.min(command.col, #lines[cursor_row] - 1)
     api.nvim_win_set_cursor(item.win, { cursor_row, math.max(0, cursor_col) })
@@ -186,6 +199,7 @@ function M.render(s, config)
       height = height,
       item = item,
       command = command,
+      wrap = wrap,
     }
     M.cursor = { win = item.win, row = cursor_row, col = math.max(0, cursor_col) }
   else
@@ -321,15 +335,28 @@ function M.render(s, config)
   else
     dirty = close("status") or dirty
   end
+  local function text_origin(saved)
+    local prefix = vim.split(command.prefix, "\n", { plain = true })
+    if anchor.wrap then
+      local screen = vim.fn.screenpos(anchor.item.win, M.cursor.row, #prefix[#prefix] + 1)
+      if screen.row > 0 then
+        return { row = screen.row - 1, col = screen.col - 1 }
+      end
+    end
+    return {
+      row = anchor.row + edge / 2 + M.cursor.row - saved.topline,
+      col = anchor.col + display_width(prefix[#prefix]) - saved.leftcol,
+    }
+  end
   local function publish_position()
     if anchor and command.editable then
       local saved = api.nvim_win_call(anchor.item.win, vim.fn.winsaveview)
-      local prefix = vim.split(command.prefix, "\n", { plain = true })
+      local origin = text_origin(saved)
       -- Shared UI convention: 1-based screen row, 0-based column before native
       -- command text (Blink adds its 1-based completion start_col).
       position({
-        anchor.row + edge / 2 + M.cursor.row - saved.topline + 1,
-        anchor.col + display_width(prefix[#prefix]) - saved.leftcol - 1,
+        origin.row + 1,
+        origin.col - 1,
       })
     else
       position(nil)
@@ -345,7 +372,6 @@ function M.render(s, config)
   local layout
   if anchor then
     local saved = api.nvim_win_call(anchor.item.win, vim.fn.winsaveview)
-    local prefix = vim.split(command.prefix, "\n", { plain = true })
     local cursor = vim.fn.screenpos(anchor.item.win, M.cursor.row, M.cursor.col + 1)
     layout = {
       win = anchor.item.win,
@@ -359,10 +385,7 @@ function M.render(s, config)
       outer_width = anchor.width + edge,
       outer_height = anchor.height + edge,
       border = { top = edge / 2, right = edge / 2, bottom = edge / 2, left = edge / 2 },
-      text = {
-        row = anchor.row + edge / 2 + M.cursor.row - saved.topline,
-        col = anchor.col + display_width(prefix[#prefix]) - saved.leftcol,
-      },
+      text = text_origin(saved),
       cursor = { row = cursor.row - 1, col = cursor.col - 1 },
     }
   end
