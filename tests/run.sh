@@ -11,6 +11,7 @@ nvim --headless -n -u NONE -i NONE --noplugin -l tests/features.lua
 nvim --headless -n -u NONE -i NONE --noplugin -l tests/events.lua
 python3 tests/ui.py
 python3 tests/confirm_ui.py
+python3 tests/workflow_ui.py
 python3 tests/cursor_ui.py
 python3 tests/modal_ui.py
 python3 tests/buffer_ui.py

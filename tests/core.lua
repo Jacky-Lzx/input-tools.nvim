@@ -222,3 +222,40 @@ vim.ui_attach, vim.ui_detach = attach, detach
 print(
   "core: nested command lines, literal Unicode/byte cursors, special chars, blocks, prompts, geometry and lifecycle passed"
 )
+
+-- A preceding confirmation body also identifies numeric/selection prompts when
+-- Neovim reports an ordinary cmdline mode rather than r/rm.
+local previous_mode = vim.fn.mode
+vim.fn.mode = function()
+  return "c"
+end
+local selection = model.new()
+model.event(
+  selection,
+  "msg_show",
+  { "confirm", { { 0, "Export format\n1: PDF\n2: Markdown" } } },
+  true
+)
+model.event(selection, "cmdline_show", { { { 0, "" } }, 0, "", "Type number: ", 0, 1 }, true)
+assert(model.prompt_active(selection))
+eq("confirm", model.command(selection).kind)
+assert(table.concat(model.command(selection).lines, "\n"):find("2: Markdown", 1, true))
+model.event(selection, "cmdline_hide", { 1 }, true)
+eq(nil, model.command(selection))
+vim.fn.mode = previous_mode
+
+local legacy_selection = model.new()
+vim.fn.mode = function()
+  return "rm"
+end
+model.event(
+  legacy_selection,
+  "msg_show",
+  { "", { { 0, "Export\n1: PDF\n2: Markdown\nChoice: " } } },
+  true
+)
+model.event(legacy_selection, "msg_show", { "", { { 0, "2\b \b2" } } }, true)
+local echoed = table.concat(model.command(legacy_selection).lines, "\n")
+assert(echoed:find("2: Markdown", 1, true) and echoed:find("Choice: 2", 1, true))
+assert(not echoed:find("\b", 1, true))
+vim.fn.mode = previous_mode

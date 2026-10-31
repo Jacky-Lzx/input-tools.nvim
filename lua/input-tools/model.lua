@@ -38,6 +38,30 @@ local function put(target, key, value)
   return true
 end
 
+-- Legacy inputlist echoes digits/backspaces as unnamed messages instead of
+-- cmdline updates. Keep its preceding choices and apply terminal erase steps.
+local function legacy_echo(previous, added)
+  local chunks = vim.deepcopy(previous)
+  for _, chunk in ipairs(added) do
+    for index, part in ipairs(vim.split(chunk[2], "\b", { plain = true })) do
+      if index > 1 then
+        while #chunks > 0 and chunks[#chunks][2] == "" do
+          table.remove(chunks)
+        end
+        local last = chunks[#chunks]
+        if last then
+          local start = last[2]:find("[%z\1-\127\194-\244][\128-\191]*$")
+          last[2] = start and last[2]:sub(1, start - 1) or ""
+        end
+      end
+      if part ~= "" then
+        chunks[#chunks + 1] = { chunk[1], part, chunk[3] }
+      end
+    end
+  end
+  return chunks
+end
+
 -- Consume only our widgets. Ordinary messages belong to notification-tools.
 function M.event(s, event, args, popupmenu)
   local changed = false
@@ -47,7 +71,10 @@ function M.event(s, event, args, popupmenu)
       chunks = vim.deepcopy(args[1]),
       prompt_hl = args[7],
       input = require("input-tools.input").context(args),
-      interactive = not vim.in_fast_event() and vim.fn.mode(1):sub(1, 1) == "r",
+      -- inputlist()/vim.ui.select() use an ordinary cmdline on newer Nvim,
+      -- even though their preceding confirm message belongs to the same dialog.
+      interactive = s.prompt ~= nil and args[3] == ""
+        or not vim.in_fast_event() and vim.fn.mode(1):sub(1, 1) == "r",
       pos = args[2],
       firstc = args[3],
       prompt = args[4] or "",
@@ -74,7 +101,10 @@ function M.event(s, event, args, popupmenu)
   elseif event == "msg_show" and M.is_prompt(args[1]) then
     local chunks = vim.deepcopy(args[2])
     local text = M.text(chunks)
-    if args[5] and s.prompt then
+    if args[1] == "" and s.prompt and s.prompt.kind == "" and not text:find("\n", 1, true) then
+      chunks = legacy_echo(s.prompt.chunks, chunks)
+      text = M.text(chunks)
+    elseif args[5] and s.prompt then
       text = s.prompt.text .. text
       chunks = vim.list_extend(vim.deepcopy(s.prompt.chunks), chunks)
     end
