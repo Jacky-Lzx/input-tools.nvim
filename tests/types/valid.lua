@@ -5,6 +5,7 @@ local opts = {
   return_prompt = "show",
   window = { border = "rounded", max_width = 70, row = 3 },
   profiles = {
+    confirm = { row = "center", min_width = 36, max_width = 64 },
     search = { width = 0.4, min_width = 20, col = -2, title = "Search", title_pos = "right" },
   },
   popupmenu = { enabled = false },

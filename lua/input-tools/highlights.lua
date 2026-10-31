@@ -25,6 +25,10 @@ function M.setup(reset)
     Title = "FloatTitle",
     Scrollbar = "PmenuSbar",
     Thumb = "PmenuThumb",
+    ConfirmText = "NormalFloat",
+    ConfirmChoice = "NormalFloat",
+    ConfirmDefault = "PmenuSel",
+    ConfirmKey = "Special",
   }) do
     vim.api.nvim_set_hl(0, "InputTools" .. name, { default = true, link = target })
   end

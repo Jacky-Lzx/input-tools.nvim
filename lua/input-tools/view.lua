@@ -133,6 +133,11 @@ function M.render(s, config)
   local layout_tools = require("input-tools.layout")
   local window =
     layout_tools.style(config, command and command.kind or "command", command and command.input)
+  if command and command.kind == "confirm" then
+    local confirm = require("input-tools.confirm")
+    command = confirm.format(command, window)
+    window = confirm.width(command, window)
+  end
   local edge = (window.border == "none" or window.border == "") and 0 or 2
   if edge == 0 and command and command.input and command.input.hide_prompt then
     command = model.command(s, true) -- A borderless window needs the inline label.
@@ -169,6 +174,14 @@ function M.render(s, config)
       item.wrap = wrap
       vim.wo[item.win].wrap, vim.wo[item.win].linebreak = item.wrap, item.wrap
       dirty = true
+    end
+    local indented = command.kind == "confirm"
+    if item.breakindent ~= indented then
+      vim.wo[item.win].breakindent = indented
+      if indented then
+        vim.wo[item.win].breakindentopt = "min:0"
+      end
+      item.breakindent, dirty = indented, true
     end
     if wrap then
       -- Measure with Neovim's actual word/Unicode wrapping, not byte lengths.

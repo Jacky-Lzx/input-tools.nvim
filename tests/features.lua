@@ -121,3 +121,38 @@ opts.window.winblend = 10
 eq(10, layout.style(opts, "input").winblend)
 eq(0, layout.style(config.resolve(), "input").winblend)
 print("layout: cached styles, per-call isolation and configuration invalidation passed")
+
+vim.o.columns, vim.o.lines = 120, 40
+-- Dialog formatting is presentation-only and respects explicit profile geometry.
+local dialog = model.new()
+model.event(
+  dialog,
+  "msg_show",
+  { "confirm", { { 0, "Keep changes?\n[Y]es, (N)o, (C)ancel: " } } },
+  true
+)
+local original = model.command(dialog)
+local dialog_style = layout.style(
+  config.resolve({ profiles = { confirm = { width = 48, row = 2, title = "Decision" } } }),
+  "confirm"
+)
+local formatted = require("input-tools.confirm").format(original, dialog_style)
+local dialog_box = layout.input(dialog_style, #formatted.lines)
+eq(48, dialog_box.width)
+eq(2, dialog_box.row)
+eq("Decision", dialog_box.title)
+eq(original, model.command(dialog))
+assert(not pcall(config.resolve, { window = { row = "middle" } }))
+eq("center", config.resolve({ window = { row = "center" } }).window.row)
+print("dialog: explicit geometry and native model preserved passed")
+
+local has_default = false
+for _, mark in ipairs(formatted.highlights) do
+  has_default = has_default or mark.hl == "InputToolsConfirmDefault"
+end
+assert(has_default)
+assert(formatted.lines[formatted.row]:sub(formatted.col + 1, formatted.col + 1) == "Y")
+local unknown = vim.deepcopy(original)
+unknown.lines[unknown.row] = "Custom options without accelerators: "
+local verbatim = require("input-tools.confirm").format(unknown, dialog_style)
+assert(verbatim.lines[verbatim.row]:find(unknown.lines[unknown.row], 1, true))

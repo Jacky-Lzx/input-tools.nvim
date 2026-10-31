@@ -160,15 +160,21 @@ extra pause for messages already shown in notification-tools. Set
 `return_prompt="show"` to wait for the user's Enter key. Confirmations, numbered
 choices and substitution decisions always wait for the user's answer. Confirmation
 bodies remain visible with their choices until answered; long paths wrap to fit.
-The default confirm profile uses a 60-cell content width and a left-aligned
-`Confirm` title. Override `profiles.confirm` to change its size or title without
-changing the command line. Native save/discard/cancel shortcuts are unchanged.
+Confirmation dialogs open in the editor center with inner spacing and a separate
+button row. The default choice is highlighted; other accelerators remain visible.
+Width follows the content between 36 and 64 cells, with long paths wrapping inside
+the dialog. Native save/discard/cancel shortcuts are unchanged. Override
+`profiles.confirm` (`width`, `min_width`, `max_width`, `row`, `title`) to customize
+it; an explicit width disables automatic sizing. `row="center"` is available in
+any window profile. Unrecognized choice text is preserved verbatim.
 On older Neovim, unnamed messages emitted in a native `r`/`rm` prompt state are
 treated as interactive too; this keeps `inputlist()` choices visible while the
 editor waits for a number.
 
 Float colors use `InputToolsNormal`, `InputToolsBorder`, `InputToolsPrompt`,
-`InputToolsMenu`, `InputToolsSelection`, `InputToolsTitle` and `InputToolsStatus`. They link to native
+`InputToolsMenu`, `InputToolsSelection`, `InputToolsTitle` and `InputToolsStatus`.
+Confirmation styling uses `InputToolsConfirmText`, `InputToolsConfirmChoice`,
+`InputToolsConfirmDefault` and `InputToolsConfirmKey`. They link to native
 theme groups; override them with `nvim_set_hl`, including from a `ColorScheme`
 autocmd. The UI preserves native highlighted chunks in command input, multiline context
 and interactive prompts, including `input()` highlight callbacks. It does not

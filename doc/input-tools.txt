@@ -207,9 +207,12 @@ Blink uses the public layout API for the input anchor.
 See :checkhealth input-tools. vim.ui_attach and nvim__redraw are experimental.
 
 Confirmation prompts keep the question and options together until answered.
-Their default profiles.confirm is {width=60,title='Confirm',title_pos='left'};
-long paths wrap and height follows native screen-line measurement, bounded by
-max_height and the screen. Override profiles.confirm for a different layout.
+Dialogs are centered, padded, and separate choices into a button row with a
+highlighted default. Width follows content within min_width=36/max_width=64;
+max_height=12 bounds wrapped text. An explicit profiles.confirm.width fixes width.
+row='center' vertically centers any profile. Title and other geometry remain
+configurable through profiles.confirm. Unknown choice text is preserved verbatim.
+InputToolsConfirmText/ConfirmChoice/ConfirmDefault/ConfirmKey link to theme groups.
 Native save/discard/cancel keys and defaults remain with Neovim.
 
  vim:tw=78:ts=8:noet:ft=help:norl:

@@ -1,7 +1,7 @@
 vim.opt.runtimepath:prepend(vim.fn.getcwd())
 local input = require("input-tools")
 input.setup()
-for _, name in ipairs({ "view", "modal", "text", "highlights", "layout", "blink" }) do
+for _, name in ipairs({ "view", "modal", "text", "highlights", "layout", "blink", "confirm" }) do
   assert(not package.loaded["input-tools." .. name], name .. " must stay lazy during setup")
 end
 local blink = require("input-tools.blink")

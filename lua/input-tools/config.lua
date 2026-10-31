@@ -15,7 +15,16 @@ M.defaults = {
     winblend = 0,
     zindex = 250,
   },
-  profiles = { confirm = { width = 60, title = "Confirm", title_pos = "left" } },
+  profiles = {
+    confirm = {
+      min_width = 36,
+      max_width = 64,
+      max_height = 12,
+      row = "center",
+      title = " Confirm ",
+      title_pos = "left",
+    },
+  },
   popupmenu = {
     enabled = true,
     border = "single",
@@ -52,8 +61,8 @@ local function window(opts)
   assert(opts.min_width <= opts.max_width, "min_width must be <= max_width")
   assert(opts.winblend <= 100, "winblend must be <= 100")
   assert(
-    opts.row == nil or opts.row == false or integer(opts.row, 0),
-    "window.row must be a nonnegative integer, false or nil"
+    opts.row == nil or opts.row == false or opts.row == "center" or integer(opts.row, 0),
+    "window.row must be a nonnegative integer, center, false or nil"
   )
   assert(integer(opts.col, -math.huge), "window.col must be a finite integer offset")
   assert(

@@ -10,7 +10,7 @@
 ---@field title_pos? 'left'|'center'|'right' Title alignment; defaults to center.
 ---@field max_height? integer Maximum context/prompt rows.
 ---@field bottom? integer Bottom margin in display rows.
----@field row? integer|false Zero-based top offset; false explicitly uses the bottom margin.
+---@field row? integer|false|'center' Zero-based top offset, vertical center, or false for the bottom margin.
 ---@field winblend? integer Transparency, 0..100.
 ---@field zindex? integer Float stacking priority.
 

@@ -70,7 +70,9 @@ function M.input(w, count, source, focusable)
   count = type(count) == "function" and count(width) or count
   local height = math.max(1, math.min(count, w.max_height, rows - edge - w.bottom))
   local row = math.max(0, rows - height - edge - w.bottom)
-  if w.row ~= nil and w.row ~= false then
+  if w.row == "center" then
+    row = math.max(0, math.floor((rows - height - edge) / 2))
+  elseif w.row ~= nil and w.row ~= false then
     row = math.max(0, math.min(w.row, rows - height - edge))
   end
   local col =
