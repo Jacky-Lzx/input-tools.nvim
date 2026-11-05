@@ -32,6 +32,30 @@ function M.setup(reset)
   }) do
     vim.api.nvim_set_hl(0, "InputTools" .. name, { default = true, link = target })
   end
+  local function definition(name)
+    local seen = {}
+    while name and not seen[name] do
+      seen[name] = true
+      local value = vim.api.nvim_get_hl(0, { name = name, link = true, create = false })
+      if not value.link then
+        return value
+      end
+      name = value.link
+    end
+    return {}
+  end
+  -- Popup borders share the popup surface, independently of command floats.
+  vim.api.nvim_set_hl(0, "InputToolsDefaultMenuBorder", {
+    fg = definition("InputToolsBorder").fg,
+    bg = definition("Pmenu").bg or "NONE",
+  })
+  local empty =
+    vim.tbl_isempty(vim.api.nvim_get_hl(0, { name = "InputToolsMenuBorder", create = false }))
+  vim.api.nvim_set_hl(
+    0,
+    "InputToolsMenuBorder",
+    { link = "InputToolsDefaultMenuBorder", default = not empty }
+  )
   initialized = true
 end
 

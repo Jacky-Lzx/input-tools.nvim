@@ -189,6 +189,8 @@ editor waits for a number.
 
 Float colors use `InputToolsNormal`, `InputToolsBorder`, `InputToolsPrompt`,
 `InputToolsMenu`, `InputToolsSelection`, `InputToolsTitle` and `InputToolsStatus`.
+`InputToolsMenuBorder` uses the menu background, keeping popup borders separate
+from command-float surfaces. Explicit highlight overrides remain authoritative.
 Confirmation styling uses `InputToolsConfirmText`, `InputToolsConfirmChoice`,
 `InputToolsConfirmDefault` and `InputToolsConfirmKey`. They link to native
 theme groups; override them with `nvim_set_hl`, including from a `ColorScheme`

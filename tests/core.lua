@@ -53,7 +53,10 @@ local view = require("input-tools.view")
 local original_position = { 42, 9 }
 vim.g.ui_cmdline_pos = original_position
 local config = require("input-tools.config").resolve()
+vim.api.nvim_set_hl(0, "Pmenu", { bg = "#21222c" })
+vim.api.nvim_set_hl(0, "FloatBorder", { fg = "#abcdef", bg = "#282a36" })
 view.highlights()
+eq(0x21222c, vim.api.nvim_get_hl(0, { name = "InputToolsMenuBorder", link = false }).bg)
 s = model.new()
 model.event(s, "cmdline_show", { { { 0, string.rep("你", 90) } }, 270, ":", "", 0, 1 }, true)
 view.render(s, config)

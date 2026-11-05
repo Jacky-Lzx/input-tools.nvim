@@ -72,7 +72,9 @@ local function surface(name, lines, geometry, window)
     vim.wo[win].sidescrolloff, vim.wo[win].linebreak = 2, false
     vim.wo[win].winhighlight = "Normal:InputTools"
       .. (name == "menu" and "Menu" or "Normal")
-      .. ",FloatBorder:InputToolsBorder,FloatTitle:InputToolsTitle"
+      .. ",FloatBorder:InputTools"
+      .. (name == "menu" and "MenuBorder" or "Border")
+      .. ",FloatTitle:InputToolsTitle"
       .. ",Search:None,IncSearch:None,CurSearch:None"
   elseif not vim.deep_equal(item.geometry, geometry) then
     local updated = vim.tbl_extend("force", {}, geometry)
