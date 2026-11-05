@@ -73,6 +73,7 @@ local function surface(name, lines, geometry, window)
     vim.wo[win].winhighlight = "Normal:InputTools"
       .. (name == "menu" and "Menu" or "Normal")
       .. ",FloatBorder:InputToolsBorder,FloatTitle:InputToolsTitle"
+      .. ",Search:None,IncSearch:None,CurSearch:None"
   elseif not vim.deep_equal(item.geometry, geometry) then
     local updated = vim.tbl_extend("force", {}, geometry)
     updated.title = geometry.title or "" -- Clear a title inherited from another input profile.
@@ -377,9 +378,14 @@ function M.render(s, config)
   end
   -- Consumers can reposition in WinResized/WinScrolled during this redraw.
   publish_position()
-  flush(M.cursor and M.cursor.win, dirty)
+  -- Native incsearch enables its current-match color only during its own
+  -- screen update. Let that update paint search floats atomically with it.
+  local searching = command and command.kind == "search"
+  if not searching then
+    flush(M.cursor and M.cursor.win, dirty)
+  end
   if M.cursor and api.nvim__redraw then
-    pcall(api.nvim__redraw, { win = M.cursor.win, cursor = true, flush = true })
+    pcall(api.nvim__redraw, { win = M.cursor.win, cursor = true, flush = not searching })
   end
   publish_position() -- Include any horizontal scrolling performed by redraw.
   local layout

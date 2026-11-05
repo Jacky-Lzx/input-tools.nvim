@@ -16,6 +16,7 @@ python3 tests/cursor_ui.py
 python3 tests/modal_ui.py
 python3 tests/buffer_ui.py
 python3 tests/render_updates.py
+python3 tests/search_ui.py
 if [ -n "${INPUT_TOOLS_BLINK_ROOT:-}" ]; then
   python3 tests/blink_ui.py
   python3 tests/blink_lazy_ui.py
