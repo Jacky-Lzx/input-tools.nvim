@@ -295,11 +295,16 @@ open_window = function(a)
     bind_confirm()
     vim.keymap.set({ "n", "i" }, "<C-c>", function()
       later(nil)
-    end, { buffer = a.buf, silent = true })
+    end, { buffer = a.buf, silent = true, desc = "Cancel input" })
     vim.keymap.set("n", "<Esc>", function()
       later(nil)
-    end, { buffer = a.buf, silent = true })
-    vim.keymap.set("i", "<Esc>", "<Esc>", { buffer = a.buf, silent = true })
+    end, { buffer = a.buf, silent = true, desc = "Cancel input" })
+    vim.keymap.set(
+      "i",
+      "<Esc>",
+      "<Esc>",
+      { buffer = a.buf, silent = true, desc = "Leave input Insert mode" }
+    )
     a.group = api.nvim_create_augroup("InputToolsModal", { clear = true })
     api.nvim_create_autocmd("InsertEnter", {
       group = a.group,
