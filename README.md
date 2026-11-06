@@ -431,3 +431,14 @@ Commands belong to the plugin; choose global entry keys and short aliases in
 your configuration. Registration reports same-name conflicts without replacing
 user commands. Reconfiguration refreshes only commands still owned by this
 plugin, and cleanup preserves subsequent user replacements.
+
+## Setup contract
+
+`setup(nil)` uses defaults. Configuration must be a table; caller-owned tables
+are copied before use. Invalid configuration types do not replace live handlers
+or commands. Repeating setup must not accumulate automatic registrations.
+
+`disable()` retains the last successful options for `enable()`. `dispose()`
+releases UI/message ownership, cancels owned prompts, and forgets retained
+options and errors; it is safe to repeat. Invalid options leave the working
+input session unchanged. Existing command entry points remain available.

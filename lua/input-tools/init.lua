@@ -148,6 +148,12 @@ local function render(s, defer)
   end
 end
 
+---Release resources and forget the retained configuration.
+function M.dispose()
+  M.teardown()
+  last_config, last_error = nil, nil
+end
+
 ---Enable using the last successful configuration (or defaults).
 function M.enable()
   if not session then
@@ -194,6 +200,8 @@ end
 ---@param opts? input_tools.Config
 ---@return input_tools.API
 function M.setup(opts)
+  assert(opts == nil or type(opts) == "table", "input-tools.nvim: setup expects a table")
+  opts = vim.deepcopy(opts or {})
   local resolved = config.resolve(opts)
   assert(vim.fn.has("nvim-0.10") == 1, "input-tools requires Neovim >= 0.10")
   for _, ui in ipairs(vim.api.nvim_list_uis()) do
