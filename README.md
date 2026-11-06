@@ -424,3 +424,10 @@ only while its already-loaded command-line menu is visible.
 
 See [performance measurements](docs/performance.md) for the reproducible isolated
 RPC-UI benchmark (`python3 scripts/benchmark.py`) and its timing limits.
+
+## Command ownership
+
+Commands belong to the plugin; choose global entry keys and short aliases in
+your configuration. Registration reports same-name conflicts without replacing
+user commands. Reconfiguration refreshes only commands still owned by this
+plugin, and cleanup preserves subsequent user replacements.
