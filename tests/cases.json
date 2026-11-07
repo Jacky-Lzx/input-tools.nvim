@@ -1,0 +1,308 @@
+{
+  "version": 1,
+  "default": [
+    "unit",
+    "ui",
+    "format"
+  ],
+  "defaults": {},
+  "cases": [
+    {
+      "name": "runner-contracts",
+      "suite": "unit",
+      "command": [
+        "{python}",
+        "tests/runner_checks.py"
+      ],
+      "files": [
+        "tests/runner_checks.py"
+      ],
+      "timeout": 120
+    },
+    {
+      "name": "health",
+      "suite": "unit",
+      "command": [
+        "{nvim}",
+        "--headless",
+        "-u",
+        "NONE",
+        "-i",
+        "NONE",
+        "--noplugin",
+        "-n",
+        "-l",
+        "tests/health.lua"
+      ],
+      "files": [
+        "tests/health.lua"
+      ],
+      "timeout": 90
+    },
+    {
+      "name": "setup_contract",
+      "suite": "unit",
+      "command": [
+        "{nvim}",
+        "--headless",
+        "-u",
+        "NONE",
+        "-i",
+        "NONE",
+        "--noplugin",
+        "-l",
+        "tests/setup_contract.lua"
+      ],
+      "files": [
+        "tests/setup_contract.lua"
+      ],
+      "timeout": 90
+    },
+    {
+      "name": "command_ownership",
+      "suite": "unit",
+      "command": [
+        "{nvim}",
+        "--headless",
+        "-u",
+        "NONE",
+        "-i",
+        "NONE",
+        "--noplugin",
+        "-l",
+        "tests/command_ownership.lua"
+      ],
+      "files": [
+        "tests/command_ownership.lua"
+      ],
+      "timeout": 90
+    },
+    {
+      "name": "lazy",
+      "suite": "unit",
+      "command": [
+        "{nvim}",
+        "--headless",
+        "-n",
+        "-u",
+        "NONE",
+        "-i",
+        "NONE",
+        "--noplugin",
+        "-l",
+        "tests/lazy.lua"
+      ],
+      "files": [
+        "tests/lazy.lua"
+      ],
+      "timeout": 90
+    },
+    {
+      "name": "core",
+      "suite": "unit",
+      "command": [
+        "{nvim}",
+        "--headless",
+        "-n",
+        "-u",
+        "NONE",
+        "-i",
+        "NONE",
+        "--noplugin",
+        "-l",
+        "tests/core.lua"
+      ],
+      "files": [
+        "tests/core.lua"
+      ],
+      "timeout": 90
+    },
+    {
+      "name": "features",
+      "suite": "unit",
+      "command": [
+        "{nvim}",
+        "--headless",
+        "-n",
+        "-u",
+        "NONE",
+        "-i",
+        "NONE",
+        "--noplugin",
+        "-l",
+        "tests/features.lua"
+      ],
+      "files": [
+        "tests/features.lua"
+      ],
+      "timeout": 90
+    },
+    {
+      "name": "events",
+      "suite": "unit",
+      "command": [
+        "{nvim}",
+        "--headless",
+        "-n",
+        "-u",
+        "NONE",
+        "-i",
+        "NONE",
+        "--noplugin",
+        "-l",
+        "tests/events.lua"
+      ],
+      "files": [
+        "tests/events.lua"
+      ],
+      "timeout": 90
+    },
+    {
+      "name": "ui",
+      "suite": "ui",
+      "command": [
+        "{python}",
+        "tests/ui.py"
+      ],
+      "files": [
+        "tests/ui.py"
+      ],
+      "timeout": 120
+    },
+    {
+      "name": "confirm_ui",
+      "suite": "ui",
+      "command": [
+        "{python}",
+        "tests/confirm_ui.py"
+      ],
+      "files": [
+        "tests/confirm_ui.py"
+      ],
+      "timeout": 120
+    },
+    {
+      "name": "workflow_ui",
+      "suite": "ui",
+      "command": [
+        "{python}",
+        "tests/workflow_ui.py"
+      ],
+      "files": [
+        "tests/workflow_ui.py"
+      ],
+      "timeout": 120
+    },
+    {
+      "name": "cursor_ui",
+      "suite": "ui",
+      "command": [
+        "{python}",
+        "tests/cursor_ui.py"
+      ],
+      "files": [
+        "tests/cursor_ui.py"
+      ],
+      "timeout": 120
+    },
+    {
+      "name": "modal_ui",
+      "suite": "ui",
+      "command": [
+        "{python}",
+        "tests/modal_ui.py"
+      ],
+      "files": [
+        "tests/modal_ui.py"
+      ],
+      "timeout": 120
+    },
+    {
+      "name": "buffer_ui",
+      "suite": "ui",
+      "command": [
+        "{python}",
+        "tests/buffer_ui.py"
+      ],
+      "files": [
+        "tests/buffer_ui.py"
+      ],
+      "timeout": 120
+    },
+    {
+      "name": "render_updates",
+      "suite": "ui",
+      "command": [
+        "{python}",
+        "tests/render_updates.py"
+      ],
+      "files": [
+        "tests/render_updates.py"
+      ],
+      "timeout": 120
+    },
+    {
+      "name": "search_ui",
+      "suite": "ui",
+      "command": [
+        "{python}",
+        "tests/search_ui.py"
+      ],
+      "files": [
+        "tests/search_ui.py"
+      ],
+      "timeout": 120
+    },
+    {
+      "name": "stylua",
+      "suite": "format",
+      "command": [
+        "stylua",
+        "--check",
+        "lua",
+        "tests",
+        "examples"
+      ],
+      "files": [],
+      "timeout": 90
+    },
+    {
+      "name": "blink_ui",
+      "suite": "compatibility",
+      "command": [
+        "{python}",
+        "tests/blink_ui.py"
+      ],
+      "files": [
+        "tests/blink_ui.py"
+      ],
+      "requires": [
+        "env:INPUT_TOOLS_BLINK_ROOT",
+        "path:$INPUT_TOOLS_BLINK_ROOT/lua/blink/cmp/init.lua"
+      ],
+      "timeout": 120
+    },
+    {
+      "name": "blink_lazy_ui",
+      "suite": "compatibility",
+      "command": [
+        "{python}",
+        "tests/blink_lazy_ui.py"
+      ],
+      "files": [
+        "tests/blink_lazy_ui.py"
+      ],
+      "requires": [
+        "env:INPUT_TOOLS_BLINK_ROOT",
+        "path:$INPUT_TOOLS_BLINK_ROOT/lua/blink/cmp/init.lua"
+      ],
+      "timeout": 120
+    }
+  ],
+  "support": {
+    "tests/rpc.py": "Loaded by tests/cursor_ui.py",
+    "tests/run.sh": "Stable shell entry point for tests/run.py",
+    "tests/types/valid.lua": "Consumer API contract fixture loaded by scripts/check_types.py"
+  },
+  "manual": {}
+}
