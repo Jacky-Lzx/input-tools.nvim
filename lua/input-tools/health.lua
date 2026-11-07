@@ -1,53 +1,47 @@
 local M = {}
+
 function M.check()
   vim.health.start("input-tools.nvim")
-  if vim.fn.has("nvim-0.10") == 1 then
-    vim.health.ok("Neovim >= 0.10")
-  else
-    vim.health.error("Neovim >= 0.10 is required")
+  if vim.fn.has("nvim-0.10") == 0 then
+    vim.health.error("Neovim 0.10+ is required", { "Upgrade Neovim" })
+    return
   end
-  local status = require("input-tools").status()
-  if status.enabled then
-    vim.health.ok("Command-line renderer attached")
-  else
-    vim.health.info("Renderer is disabled; call require('input-tools').setup()")
+  local issues = {}
+  local function problem(level, message, advice)
+    issues[#issues + 1] = { level = level, message = message, advice = advice }
   end
-  if status.notifications then
-    vim.health.ok("Native messages handed to notification-tools")
-  else
-    vim.health.info("No message handoff; native messages stay with their current owner")
-  end
-  if status.blink.loaded then
-    if status.blink.adapter then
-      vim.health.ok("Blink outer-frame adapter configured")
-    else
-      vim.health.info("Blink loaded; default/shared command-line position is used")
-    end
-  else
-    vim.health.info("Blink is not loaded (no completion dependency is required)")
+  local plugin = package.loaded["input-tools"]
+  local status = plugin and plugin.status()
+  if not status or not status.enabled and not status.last_error then
+    vim.health.info("Renderer inactive; input checks skipped.")
+    return
   end
   if status.last_error then
-    vim.health.warn("Last renderer error: " .. status.last_error)
+    problem("warn", "Renderer failed: " .. status.last_error, { "Inspect :InputToolsInfo" })
   end
-  if status.window then
-    vim.health.info("Visible input window: " .. status.window)
-    if status.layout then
-      local box = status.layout
-      vim.health.info(
-        ("Layout: %s at row=%d col=%d, frame=%dx%d"):format(
-          box.kind,
-          box.row,
-          box.col,
-          box.outer_width,
-          box.outer_height
-        )
-      )
-    end
-  end
-  if package.loaded["noice"] then
-    vim.health.warn(
-      "Noice is loaded; disable its command-line, message and popup-menu owners before enabling input-tools"
+  local noice = package.loaded["noice.config"]
+  local other = noice and noice.options
+  if status.enabled and other and (other.cmdline or {}).enabled then
+    problem(
+      "warn",
+      "Noice cmdline is enabled; command-line renderers conflict.",
+      { "Disable Noice cmdline while input-tools owns command-line rendering" }
     )
   end
+
+  table.sort(issues, function(a, b)
+    if a.level ~= b.level then
+      return a.level == "error"
+    end
+    return a.message < b.message
+  end)
+  for _, issue in ipairs(issues) do
+    vim.health[issue.level](issue.message, issue.advice)
+  end
+  if #issues == 0 then
+    vim.health.ok("Command-line renderer is attached.")
+  end
+  vim.health.info("Details: :InputToolsInfo")
 end
+
 return M

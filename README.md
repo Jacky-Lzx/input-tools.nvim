@@ -442,3 +442,10 @@ or commands. Repeating setup must not accumulate automatic registrations.
 releases UI/message ownership, cancels owned prompts, and forgets retained
 options and errors; it is safe to repeat. Invalid options leave the working
 input session unchanged. Existing command entry points remain available.
+
+## Health and inspection
+
+Health reports actionable failures and a compact result for applicable checks. Disabled,
+optional and not-yet-activated features do not warn solely because they are inactive.
+Inspection does not configure plugins, start services or install dependencies.
+Use `:InputToolsInfo` for detailed configuration and runtime information.
