@@ -1,14 +1,56 @@
-*input-tools.txt*  Command-line and prompt UI for Neovim 0.10+
+*input-tools.txt*	A floating command-line UI that keeps Neovim editing and completion.
 
-SETUP                                                        *input-tools*
+==============================================================================
+CONTENTS                                                         *input-tools*
+
+  Quick start         |input-tools-quickstart|
+  Commands            |input-tools-commands|
+  Options             |input-tools-options|
+  Lua API             |input-tools-api|
+  Lifecycle           |input-tools-lifecycle|
+  Troubleshooting     |input-tools-troubleshooting|
+
+==============================================================================
+QUICK START                                           *input-tools-quickstart*
+
+Requires Neovim 0.10+. No runtime dependencies. Use one external command-line
+UI at a time.
+
+>lua
+    require("input-tools").setup({})
+<
+
+The example above selects a small working setup. Full defaults, options and
+feature contracts are documented in this reference. Public installation and
+package-manager examples are in README.md.
+
+==============================================================================
+TROUBLESHOOTING                                  *input-tools-troubleshooting*
+
+Check the minimum Neovim version and feature dependencies first. Run
+:checkhealth input-tools to inspect availability. Global mappings shown in the
+README are configuration examples unless explicitly documented as plugin
+defaults. Keep one owner for each overridden UI or mapping.
+
+==============================================================================
+COMMANDS                                                *input-tools-commands*
+
+:InputToolsInfo
+
+See the workflow guide for usage examples and the detailed reference below for
+arguments and feature-specific commands.
+
+SETUP
 >
     require("input-tools").setup({})
 <
 No runtime dependencies. The plugin draws the native command line near the
-bottom and leaves editing, history, search and completion with Neovim. require()
-alone does not attach UI. It does not replace vim.ui.input/select/notify or keys.
+bottom and leaves editing, history, search and completion with Neovim.
+require() alone does not attach UI. It does not replace
+vim.ui.input/select/notify or keys.
 
-CONFIGURATION                                         *input-tools-config*
+CONFIGURATION                                            *input-tools-options*
+                                                          *input-tools-config*
 >
     require("input-tools").setup({
       notifications = true,
@@ -24,39 +66,42 @@ CONFIGURATION                                         *input-tools-config*
 Long commands scroll horizontally. Prompt/context height is bounded.
 window.row optionally sets a zero-based top offset (e.g. 3 for a top-centered
 command palette), overriding bottom placement. Set row=false in a profile to
-explicitly restore bottom placement despite a top offset in the base window. Small screens clamp the position.
-Completion menus use the available space below/above the input without overlap.
-Nested command lines, expression input and multiline definition blocks are supported.
-With popupmenu.enabled=true both native command-line and insert completion menus
-are drawn here. Neovim still owns selection/acceptance keys and completion
-sources. For command-line popup completion, use wildoptions=pum and wildmode=full.
-The plugin does not change these options or provide syntax parsing.
-Native popupmenu options: border="single", min_width=1, max_width=60,
-max_height=8, align="frame" (or "cursor" for command-argument anchoring),
-scrollbar=true. Insert menus remain cursor-relative. Long candidates are clipped
-by display cells, with a reserved scrollbar column when items overflow. Menus
-choose available space and shrink without overlapping the input. Blink uses its
-own appearance settings; its adapter shifts wide menus left near the screen edge.
+explicitly restore bottom placement despite a top offset in the base window.
+Small screens clamp the position. Completion menus use the available space
+below/above the input without overlap. Nested command lines, expression input
+and multiline definition blocks are supported. With popupmenu.enabled=true
+both native command-line and insert completion menus are drawn here. Neovim
+still owns selection/acceptance keys and completion sources. For command-line
+popup completion, use wildoptions=pum and wildmode=full. The plugin does not
+change these options or provide syntax parsing. Native popupmenu options:
+border="single", min_width=1, max_width=60, max_height=8, align="frame" (or
+"cursor" for command-argument anchoring), scrollbar=true. Insert menus remain
+cursor-relative. Long candidates are clipped by display cells, with a reserved
+scrollbar column when items overflow. Menus choose available space and shrink
+without overlapping the input. Blink uses its own appearance settings; its
+adapter shifts wide menus left near the screen edge.
 
 Input-specific layouts: profiles.command/search/input/expression/confirm are
-window overrides for :, / and ?, input(), = and interactive prompts respectively.
-window.width is a positive cell count or fraction in (0,1] of editor columns;
-min_width/max_width bound it, with screen space taking precedence. Without width,
-max_width retains its previous behavior. window.col offsets horizontal center.
-window.title is an upper border string, or false (default). title_pos selects
-left, center (default), or right. No border omits configured window titles.
-Example: profiles = { search = { width = 0.4, title = "Search" } }.
+window overrides for :, / and ?, input(), = and interactive prompts
+respectively. window.width is a positive cell count or fraction in (0,1] of
+editor columns; min_width/max_width bound it, with screen space taking
+precedence. Without width, max_width retains its previous behavior. window.col
+offsets horizontal center. window.title is an upper border string, or false
+(default). title_pos selects left, center (default), or right. No border omits
+configured window titles. Example: profiles = { search = { width = 0.4, title
+= "Search" } }.
 
-BLINK.CMP                                             *input-tools-blink*
+BLINK.CMP                                                  *input-tools-blink*
 
 Blink's default completion.menu.cmdline_position reads vim.g.ui_cmdline_pos.
-Input-tools publishes this shared screen position while native input is visible,
-including layout/scroll offsets, and releases it when input closes. No Blink
-dependency or early loading is required. Custom Blink positioning callbacks
-should honor this value. Teardown restores a previous value only if still owned.
-Layout changes coalesce a refresh of an already-loaded Blink menu on the next
-event-loop turn. This guarded call uses Blink's internal menu positioning method;
-no Blink modules are loaded or patched, and completion behavior stays with Blink.
+Input-tools publishes this shared screen position while native input is
+visible, including layout/scroll offsets, and releases it when input closes.
+No Blink dependency or early loading is required. Custom Blink positioning
+callbacks should honor this value. Teardown restores a previous value only if
+still owned. Layout changes coalesce a refresh of an already-loaded Blink menu
+on the next event-loop turn. This guarded call uses Blink's internal menu
+positioning method; no Blink modules are loaded or patched, and completion
+behavior stays with Blink.
 
 For matching outer borders, merge the following into Blink's opts:
 >
@@ -66,27 +111,28 @@ For matching outer borders, merge the following into Blink's opts:
 <
 This configures public position/direction callbacks and compensates candidate
 alignment using an already-loaded renderer's guarded internal offset accessor.
-Both left borders align and the menu stays outside the input border. No columns,
-icons, padding or keys are changed. Insert-mode direction and supplied position
-callbacks are preserved when this input renderer is inactive. Evaluate these
-options after input-tools is on runtimepath.
+Both left borders align and the menu stays outside the input border. No
+columns, icons, padding or keys are changed. Insert-mode direction and
+supplied position callbacks are preserved when this input renderer is
+inactive. Evaluate these options after input-tools is on runtimepath.
 
 The default return_prompt=auto acknowledges only hit-enter prompts. Confirm,
 numbered choice and substitution prompts always wait for the user's answer.
 return_prompt=show displays the hit-enter prompt until answered. Externalized
-showmode/showcmd/ruler widgets are displayed unless status=false.
-Old unnamed numbered-choice messages in r/rm prompt states are also interactive;
-they stay visible while inputlist() waits for the user's number.
+showmode/showcmd/ruler widgets are displayed unless status=false. Old unnamed
+numbered-choice messages in r/rm prompt states are also interactive; they stay
+visible while inputlist() waits for the user's number.
 
 Highlight groups: InputToolsNormal, InputToolsBorder, InputToolsPrompt,
-InputToolsMenu, InputToolsSelection, InputToolsTitle, InputToolsStatus. Colors link to native
-theme groups and may be overridden using nvim_set_hl/ColorScheme autocmds.
-Native input/context/prompt chunk colors are preserved, including input()
-highlight callbacks. On old protocols, a guarded LuaJIT integer-only bridge
-resolves matching groups; unavailable/unmatched attributes use the base color.
-No C structures are read. Modern protocols use supplied group IDs directly.
+InputToolsMenu, InputToolsSelection, InputToolsTitle, InputToolsStatus. Colors
+link to native theme groups and may be overridden using
+nvim_set_hl/ColorScheme autocmds. Native input/context/prompt chunk colors are
+preserved, including input() highlight callbacks. On old protocols, a guarded
+LuaJIT integer-only bridge resolves matching groups; unavailable/unmatched
+attributes use the base color. No C structures are read. Modern protocols use
+supplied group IDs directly.
 
-NOTIFICATIONS                                  *input-tools-notifications*
+NOTIFICATIONS                                      *input-tools-notifications*
 >
     require("notification-tools").setup({ messages = { enabled = true } })
     require("input-tools").setup()
@@ -94,29 +140,32 @@ NOTIFICATIONS                                  *input-tools-notifications*
 Input-tools owns command-line/prompt/completion UI, notification-tools owns
 non-interactive messages and notifications. No hard dependency: input-tools
 joins only an already loaded notification-tools instance. Without a handoff,
-native messages retain their current owner. notifications=false disables joining.
+native messages retain their current owner. notifications=false disables
+joining.
 
 The renderer attaches before calling notification-tools.attach_messages(). Its
-returned handle is released before this renderer stops. Both loading orders and
-notification reconfiguration work with NotificationToolsReady User events. Older
-versions lacking that event need notifications loaded first or a manual call to
-sync_notifications() after notification setup. Repeated input setup replaces its
-old instance and acquires a fresh handle.
+returned handle is released before this renderer stops. Both loading orders
+and notification reconfiguration work with NotificationToolsReady User events.
+Older versions lacking that event need notifications loaded first or a manual
+call to sync_notifications() after notification setup. Repeated input setup
+replaces its old instance and acquires a fresh handle.
 
 Disable competing Noice command-line/message/popup-menu owners. Connected GUIs
 already externalizing these widgets are detected before attachment. Lua owners
 cannot be enumerated automatically. No notification UI is bundled here.
 
-API                                                      *input-tools-api*
+API                                                          *input-tools-api*
 
 setup(opts?)             Validate, replace the old instance, attach and join.
 teardown()               Release message handle, UI callback, floats/autocmds.
 is_enabled()             True while our UI subscription is active.
-enable()                 Resume last successful config; no-op if already enabled.
+enable()                 Resume last successful config; no-op if already
+enabled.
 disable()                Restore native input, retaining config for enable().
 toggle()                 Enable or disable.
 status()                 enabled, notifications, window, blink and last_error.
-                         blink = { loaded, visible, adapter }; no eager loading.
+                         blink = { loaded, visible, adapter }; no eager
+                             loading.
                          Successful setup clears last_error.
 
 :InputTools enable|disable|toggle|status provides these controls after setup.
@@ -128,91 +177,443 @@ input(opts?, callback)   General input API for any consumer. Accepts vim_mode/
                          position/
                          title/
                          title_pos/prompt/default/
-                         completion/highlight; ignores provider-specific fields.
-                         Callback receives nil on cancel, "" for accepted empty.
+                         completion/highlight; ignores provider-specific
+                             fields.
+                         Callback receives nil on cancel, "" for accepted
+                             empty.
                          Does not replace vim.ui.input or enable the renderer.
                          vim_mode=false (default): native command-line engine;
                          native display is used if the renderer is disabled.
                          vim_mode=true: focusable scratch buffer, initially in
                          Insert mode. Esc enters Normal; native motions, ciw,
                          undo/redo work. Enter confirms in Normal or Insert.
-                         Ctrl-C cancels; Normal-mode Esc cancels too. A visible
-                         completion menu consumes Enter to accept its item first.
+                         Ctrl-C cancels; Normal-mode Esc cancels too. A
+                             visible
+                         completion menu consumes Enter to accept its item
+                             first.
                          Focus is restored before the scheduled callback. Only
                          buffer-local mappings are installed. Accepted empty
                          text is ""; cancellation is nil. Window close/leave,
-                         teardown/disable or a newer Vim input also cancel once.
-                         Vim mode returns {cancel=function}; cancel is idempotent.
+                         teardown/disable or a newer Vim input also cancel
+                             once.
+                         Vim mode returns {cancel=function}; cancel is
+                             idempotent.
                          It can open without enabling the cmdline renderer.
                          get_layout().vim_mode=true identifies this float.
-                         Both modes support completion/highlight specifications.
-                         Vim mode uses a local completefunc (<C-x><C-u>), backed
+                         Both modes support completion/highlight
+                             specifications.
+                         Vim mode uses a local completefunc (<C-x><C-u>),
+                             backed
                          by getcompletion() or custom/customlist callbacks.
-                         Custom callbacks receive argument/full input/byte cursor.
-                         Highlight callbacks return sorted zero-based byte spans
-                         {start,exclusive_end,group}; UTF-8 boundaries are required.
-                         Full input includes newlines. Text/theme changes refresh
-                         highlights; cursor movement reuses them. Callback errors
+                         Custom callbacks receive argument/full input/byte
+                             cursor.
+                         Highlight callbacks return sorted zero-based byte
+                             spans
+                         {start,exclusive_end,group}; UTF-8 boundaries are
+                             required.
+                         Full input includes newlines. Text/theme changes
+                             refresh
+                         highlights; cursor movement reuses them. Callback
+                             errors
                          warn once and preserve editable input.
                          For optional Blink buffer suggestions, configure:
-                           opts.sources = require('input-tools.blink').sources_config(opts.sources)
-                         Only the input filetype uses this completefunc provider.
-                         Without completion, Blink stays disabled in the input.
+                           opts.sources =
+                               require('input-tools.blink').sources_config(opts.sources)
+                         Only the input filetype uses this completefunc
+                             provider.
+                         Without completion, Blink stays disabled in the
+                             input.
                          Neither adapter loads Blink. First Enter accepts the
                          selected candidate, next Enter confirms the input.
                          Both modes use profiles.input and per-call styling.
                          position=cursor opens below the source cursor, flips
                          above when needed and clamps horizontally. Anchors to
-                         the original buffer position and follows source scroll,
+                         the original buffer position and follows source
+                             scroll,
                          split changes and editor resize without a timer.
-                         Hidden/invalid sources fall back to the editor layout.
+                         Hidden/invalid sources fall back to the editor
+                             layout.
                          position=editor (default) uses configured row/col.
                          Size, border and other profile styling still apply.
-                         width optionally overrides content width for one call:
-                         positive cells or a fraction in (0,1], bounded by profile
-                         min_width/max_width and screen space. Long text scrolls.
+                         width optionally overrides content width for one
+                             call:
+                         positive cells or a fraction in (0,1], bounded by
+                             profile
+                         min_width/max_width and screen space. Long text
+                             scrolls.
                          title overrides the upper border for this call only;
-                         title_pos=left/center/right overrides profile alignment.
-                         title=false suppresses a configured title. Omit prompt
-                         for a title-only input; supply it for an inline label too.
-                         Borderless/disabled title-only input uses an inline label.
-                         Consumers call this directly; lsp-tools rename resolves
-                         this API automatically, without a configuration bridge.
-sync_notifications()     Retry the handoff after an already loaded producer setup.
+                         title_pos=left/center/right overrides profile
+                             alignment.
+                         title=false suppresses a configured title. Omit
+                             prompt
+                         for a title-only input; supply it for an inline label
+                             too.
+                         Borderless/disabled title-only input uses an inline
+                             label.
+                         Consumers call this directly; lsp-tools rename
+                             resolves
+                         this API automatically, without a configuration
+                             bridge.
+sync_notifications()     Retry the handoff after an already loaded producer
+setup.
 
 Invalid configuration preserves the working instance. UI errors disable this
-renderer and release messages to restore native input. Stale scheduled callbacks
-cannot affect a newer instance. No idle refresh timer is retained.
+renderer and release messages to restore native input. Stale scheduled
+callbacks cannot affect a newer instance. No idle refresh timer is retained.
 
-LAYOUT EVENTS                                        *input-tools-events*
+LAYOUT EVENTS                                             *input-tools-events*
 
 get_layout() returns win, buf, kind, editable, row, col, width, height,
 outer_width, outer_height, border={top,right,bottom,left}, text={row,col} and
-cursor={row,col}. All coordinates are zero-based screen cells. row/col describe
-the outer frame; width/height exclude borders. text is the native text origin
-adjusted for scrolling (column may be negative); cursor is its actual screen
-position. No command contents are exposed. Returned values are copies.
+cursor={row,col}. All coordinates are zero-based screen cells. row/col
+describe the outer frame; width/height exclude borders. text is the native
+text origin adjusted for scrolling (column may be negative); cursor is its
+actual screen position. No command contents are exposed. Returned values are
+copies.
 
-User InputToolsOpen: input window became visible.
-User InputToolsLayoutChanged: geometry, kind, scrolling or cursor changed.
-User InputToolsClose: input closed; event.data.layout is the previous snapshot.
+User InputToolsOpen: input window became visible. User
+InputToolsLayoutChanged: geometry, kind, scrolling or cursor changed. User
+InputToolsClose: input closed; event.data.layout is the previous snapshot.
 
 All three provide event.data.layout. They are coalesced and scheduled after
-rendering, outside UI callbacks. Open+close within one event-loop turn may emit
-nothing. get_layout() returns nil immediately after close/disable. A close
-snapshot may contain an already-invalid window. Handler failures are reported
-without disabling the renderer; reentrant disable/reconfiguration is supported.
-Blink uses the public layout API for the input anchor.
+rendering, outside UI callbacks. Open+close within one event-loop turn may
+emit nothing. get_layout() returns nil immediately after close/disable. A
+close snapshot may contain an already-invalid window. Handler failures are
+reported without disabling the renderer; reentrant disable/reconfiguration is
+supported. Blink uses the public layout API for the input anchor.
 
 See :checkhealth input-tools. vim.ui_attach and nvim__redraw are experimental.
 
 Confirmation prompts keep the question and options together until answered.
 Dialogs are centered, padded, and separate choices into a button row with a
 highlighted default. Width follows content within min_width=36/max_width=64;
-max_height=12 bounds wrapped text. An explicit profiles.confirm.width fixes width.
-row='center' vertically centers any profile. Title and other geometry remain
-configurable through profiles.confirm. Unknown choice text is preserved verbatim.
-InputToolsConfirmText/ConfirmChoice/ConfirmDefault/ConfirmKey link to theme groups.
-Native save/discard/cancel keys and defaults remain with Neovim.
+max_height=12 bounds wrapped text. An explicit profiles.confirm.width fixes
+width. row='center' vertically centers any profile. Title and other geometry
+remain configurable through profiles.confirm. Unknown choice text is preserved
+verbatim. InputToolsConfirmText/ConfirmChoice/ConfirmDefault/ConfirmKey link
+to theme groups. Native save/discard/cancel keys and defaults remain with
+Neovim.
 
- vim:tw=78:ts=8:noet:ft=help:norl:
+==============================================================================
+CONFIGURATION                            *input-tools-reference-configuration*
+
+>lua
+    require("input-tools").setup({
+      notifications = true, -- Join an already loaded, opted-in notification-tools.
+      return_prompt = "auto", -- "show" preserves the native hit-enter interaction.
+      status = true, -- Mode, showcmd and ruler widgets when messages are externalized.
+      window = {
+        border = "rounded", -- single, double, solid, none and "" also supported.
+        max_width = 80,
+        max_height = 8,
+        bottom = 1,
+        -- row = 3, -- Optional zero-based top offset; overrides bottom placement.
+        winblend = 0,
+        zindex = 250,
+      },
+      popupmenu = {
+        enabled = true, -- Applies to native command-line AND insert-mode completion.
+        border = "single",
+        min_width = 1,
+        align = "frame", -- "cursor" aligns with the current command argument.
+        scrollbar = true,
+        max_height = 8,
+        max_width = 60,
+      },
+    })
+<
+
+The command line is centered near the bottom by default. Set `window.row = 3`
+for a top-centered command palette like Noice's `command_palette` preset. The
+position is clamped on small screens. Completion menus appear below a top
+input or above a bottom input, falling back to available space without
+overlapping it. Native menus align their outer left frame with the input by
+default; `align="cursor"` anchors to the completion start instead. Insert-mode
+menus remain cursor-relative. Borders and width limits apply independently of
+the input. Overflowing candidates are clipped by display cells and a scrollbar
+shows the visible range. Menus prefer a side with enough space, shrink when
+necessary and stay outside the input frame. Blink keeps its own
+border/width/scrollbar options; its adapter also shifts a wide menu left when
+the input sits near the right screen edge. Long input scrolls horizontally
+with the cursor; multiline prompts/context use at most `max_height` rows. Menu
+selection, acceptance and cancellation use Neovim's existing keys and
+settings. Use `wildoptions=pum` and `wildmode=full` if you want the native
+command-line completion engine to emit a popup menu. Input-tools does not
+change these options. With popup-menu capture disabled, Neovim/another owner
+controls menu display.
+
+Hit-enter prompts are acknowledged automatically by default; this avoids an
+extra pause for messages already shown in notification-tools. Set
+`return_prompt="show"` to wait for the user's Enter key. Confirmations,
+numbered choices and substitution decisions always wait for the user's answer.
+Confirmation bodies remain visible with their choices until answered; long
+paths wrap to fit. Confirmation dialogs open in the editor center with inner
+spacing and a separate button row. The default choice is highlighted; other
+accelerators remain visible. Width follows the content between 36 and 64
+cells, with long paths wrapping inside the dialog. Native save/discard/cancel
+shortcuts are unchanged. Override `profiles.confirm` (`width`, `min_width`,
+`max_width`, `row`, `title`) to customize it; an explicit width disables
+automatic sizing. `row="center"` is available in any window profile.
+Unrecognized choice text is preserved verbatim. On older Neovim, unnamed
+messages emitted in a native `r`/`rm` prompt state are treated as interactive
+too; this keeps `inputlist()` choices visible while the editor waits for a
+number.
+
+Float colors use `InputToolsNormal`, `InputToolsBorder`, `InputToolsPrompt`,
+`InputToolsMenu`, `InputToolsSelection`, `InputToolsTitle` and
+`InputToolsStatus`. `InputToolsMenuBorder` uses the menu background, keeping
+popup borders separate from command-float surfaces. Explicit highlight
+overrides remain authoritative. Confirmation styling uses
+`InputToolsConfirmText`, `InputToolsConfirmChoice`, `InputToolsConfirmDefault`
+and `InputToolsConfirmKey`. They link to native theme groups; override them
+with `nvim_set_hl`, including from a `ColorScheme` autocmd. The UI preserves
+native highlighted chunks in command input, multiline context and interactive
+prompts, including `input()` highlight callbacks. It does not add a syntax
+parser or change command-line completion sources. New protocols provide group
+IDs directly. On older Neovim, a guarded LuaJIT integer-only bridge resolves
+matching highlight groups; if that symbol is unavailable or no group matches,
+the text remains readable with the base color. No C structure layouts are
+assumed. Its terminal cursor uses Neovim's experimental `nvim__redraw` cursor
+support, available in the supported versions.
+
+==============================================================================
+INPUT-SPECIFIC LAYOUTS *input-tools-reference-configuration-input-specific-layouts*
+
+`window` remains the shared default. Optional `profiles` override it for
+`command` (`:`), `search` (`/` and `?`), `input` (`input()`), `expression`
+(`=`) and `confirm` (interactive prompts). Existing configurations keep their
+layout.
+
+>lua
+    require("input-tools").setup({
+      window = { row = 3 },
+      profiles = {
+        search = { width = 0.4, min_width = 24, max_width = 60, title = "Search" },
+        input = { width = 50, title = "Input", title_pos = "center" },
+      },
+    })
+<
+
+`width` is a positive cell count or a fraction in `(0, 1]` of editor columns.
+It is bounded by `min_width`, `max_width` and available screen space. Without
+`width`, the existing `max_width` behavior is preserved. `row=false`
+explicitly restores bottom placement in a profile even if the base window has
+a top offset. `col` is a signed offset from horizontal center. `title` is an
+upper border title (`false` by default). `title_pos` selects `"left"`,
+`"center"` (default) or `"right"`; borderless windows omit configured titles.
+Both position and size clamp on small screens.
+
+==============================================================================
+API AND LIFECYCLE                    *input-tools-reference-api-and-lifecycle*
+
+>lua
+    local input = require("input-tools")
+    input.setup(opts)          -- Validate, replace the old instance, then attach.
+    input.enable()            -- Resume the last successful config; no-op if active.
+    input.disable()           -- Restore native input, retaining config for enable.
+    input.toggle()
+    input.is_enabled()         -- Whether our UI subscription is active.
+    input.status()             -- Ownership, window, Blink state and last render error.
+    input.get_window()         -- Visible input window ID, or nil; does not load UI.
+    input.get_layout()         -- Independent snapshot of visible input geometry, or nil.
+    input.input({ prompt = "Name: ", default = "old" }, function(value)
+      -- value is nil on cancellation; an accepted empty string remains "".
+    end)
+    input.sync_notifications() -- Retry the optional handoff after producer setup.
+    input.teardown()           -- Release messages, UI subscription, floats/autocmds.
+<
+
+After setup, `:InputTools enable`, `disable`, `toggle` and `status` provide
+the same controls. The command remains available while disabled. `status()`
+and `:checkhealth input-tools` inspect already-loaded Blink without activating
+it. A successful setup clears the recorded renderer error. Invalid
+reconfiguration preserves both the active instance and the configuration used
+by `enable()`.
+
+==============================================================================
+GENERAL INPUT API  *input-tools-reference-api-and-lifecycle-general-input-api*
+
+`input.input(opts, on_confirm)` provides a shared input API even when another
+plugin owns `vim.ui.input`. `vim_mode=false` (default) uses Neovim's native
+command-line input engine. `vim_mode=true` opens a real editable scratch
+buffer with native Normal/Insert editing. Both use the `profiles.input` layout
+and per-call `width`, `position`, `title`, `title_pos`, `prompt` and `default`
+options. Neither replaces `vim.ui.input` or enables the global command-line
+renderer. Native input falls back to Neovim's display when the renderer is
+disabled; explicit Vim-mode input can open independently of that renderer.
+
+Any consumer can call the same public API directly:
+
+>lua
+    require("input-tools").input({
+      vim_mode = true,
+      position = "cursor",
+      width = 32,
+      title = "Project name",
+      title_pos = "center",
+      default = "demo",
+    }, function(value)
+      if value ~= nil then
+        -- Use the accepted value (including an empty string).
+      end
+    end)
+<
+
+`position="cursor"` opens beside the caller's buffer cursor, below its screen
+line when space permits and above otherwise. The frame shifts horizontally to
+fit the editor. It anchors to the original buffer position rather than
+following the input cursor while typing, and updates after source scrolling,
+split changes and editor resizing. Screen coordinates account for wrapping,
+tabs, wide characters and window decorations. If that source window/buffer is
+no longer visible, the configured editor layout is used. There is no polling
+timer.
+
+`position="editor"` (default) retains the configured `window.row`/`window.col`
+layout. Cursor positioning overrides those coordinates while retaining the
+input profile's size, border, title and blending. Native completion menus and
+Blink's position adapter use the same final frame geometry.
+
+`width` optionally overrides the content width for this call (display cells or
+an editor-width fraction in `(0, 1]`), within the profile's
+`min_width`/`max_width` and screen limits. Omit it to keep the configured
+width. Long values scroll horizontally without truncating the value passed to
+the callback.
+
+`title` appears in the upper border. `title_pos` is `"left"`, `"center"` or
+`"right"`, defaulting to `profiles.input.title_pos` / `window.title_pos`
+(center). These options apply only to this call and override the input
+profile. `title=false` suppresses a configured title. `prompt` remains an
+independent inline label; omit it for a title-only input with only the value
+on the editable line. When there is no border or the renderer is disabled,
+title-only inputs use an inline label. Titles do not leak to later calls or
+nested command-line expressions.
+
+In Vim mode the buffer starts in Insert at the end of `default`. `Esc`
+switches to Normal for motions, operators such as `ciw`, and undo/redo.
+`Enter` confirms from Normal or Insert (with an active completion menu it
+accepts that item first). `Ctrl-C` cancels from either mode; `Esc` in Normal
+also cancels. Closing the input, leaving its window, calling
+`teardown()`/`disable()`, or opening a newer Vim input cancels it exactly
+once. Only input-buffer mappings are installed. The source window regains
+focus before the scheduled callback runs; accepted empty text is `""`,
+cancellation is `nil`. If the user leaves for another window, that chosen
+window keeps focus.
+
+Vim-mode calls return an optional handle with an idempotent `cancel()` method;
+native command-line calls return `nil`. `get_window()` and `get_layout()`
+expose the editable float too (`layout.vim_mode=true`), and lifecycle events
+still apply. Both modes accept `completion` and `highlight`. In Vim mode,
+`completion` installs a buffer-local `completefunc`: use `<C-x><C-u>` for
+native completion. Built-in kinds such as `file`, `dir`, `command` and
+`cmdline` use `getcompletion()`; `custom,Function` and `customlist,Function`
+receive the current argument, full input and byte cursor position. Callback
+names may use `v:lua.`. No completion specification means external Blink
+suggestions remain disabled in this scratch input; rename therefore keeps its
+existing editing behavior.
+
+`highlight` receives the full value (including newlines) and returns sorted
+`{start_byte, end_byte, "Group"}` spans, using zero-based byte offsets and
+exclusive ends like native `input()`. Spans may cross lines but must respect
+UTF-8 character boundaries. Results are refreshed after text changes and
+colorscheme changes; cursor movement does not rerun the callback. A bad
+completion/highlight callback warns once per input and leaves the input
+usable.
+
+For Blink-powered suggestions in Vim input, add the optional source adapter in
+Blink's opts function (alongside the existing command-line menu adapter):
+
+>lua
+    opts.sources = require("input-tools.blink").sources_config(opts.sources)
+<
+
+This uses Blink's built-in `complete_func` source only for
+`input-tools-input`. Other filetypes retain their sources and keymaps. It
+works when opening the first input lazy-loads Blink on `InsertEnter`. Without
+this adapter, declared completion still works through native `<C-x><C-u>`.
+With either menu, the first `Enter` accepts the completion; the next confirms
+the input. Input-tools retains its local Enter mapping after `InsertEnter`;
+Blink still owns its navigation keys. The adapter does not load Blink.
+
+Input-tools owns the input API and renderer; consumers own the action
+performed with the value. Lsp-tools uses this general API for rename
+automatically when it is available, without a configuration callback or a
+rename-specific input API.
+
+==============================================================================
+LAYOUT API AND EVENTS *input-tools-reference-api-and-lifecycle-layout-api-and-events*
+
+`get_layout()` returns a copy containing `win`, `buf`, `kind`, `editable`,
+`row`, `col`, `width`, `height`, `outer_width`, `outer_height`, `border`,
+`text` and `cursor`. Rows/columns are zero-based screen cells. `row`/`col` are
+the outer frame origin; `width`/`height` exclude its border. `text` is the
+native command-text origin adjusted for scrolling (its column can be
+negative), and `cursor` is the actual screen cursor. No command contents are
+included. Closing or disabling the input makes the API return `nil`
+immediately.
+
+>lua
+    vim.api.nvim_create_autocmd("User", {
+      pattern = { "InputToolsOpen", "InputToolsLayoutChanged", "InputToolsClose" },
+      callback = function(event)
+        local layout = event.data.layout
+        -- Open/change: use layout to position a companion UI.
+        -- Close: layout describes the previous input; its window may be invalid.
+      end,
+    })
+<
+
+Events run on the next event-loop turn after rendering. Repeated changes are
+coalesced to the latest snapshot, so an input opened and closed within the
+same turn may produce no event. Open fires when an input window becomes
+visible; layout-changed covers geometry, input kind, scrolling and cursor
+movement. Close carries the previous snapshot. Callback mutations cannot alter
+renderer state; callback errors are reported without disabling input. The
+Blink adapter uses this public geometry API for the input anchor.
+
+No idle timer runs. UI events update native command-line state and redraw its
+non-focusable floats; Vim-mode API inputs use their own focusable buffers.
+Repeated identical events do not schedule redraw loops. Fast-event work is
+deferred. Rendering failures disable the UI and release the message handoff,
+restoring native input rather than leaving an invisible prompt. Invalid
+configuration is rejected before replacing a working instance.
+
+The UI subscription uses Neovim's experimental `vim.ui_attach` protocol. A
+consumer that replaces input-tools should call `teardown()` first. This plugin
+does not capture ordinary output, implement a message history, or manage LSP
+UI.
+
+==============================================================================
+COMMAND OWNERSHIP                    *input-tools-reference-command-ownership*
+
+Commands belong to the plugin; choose global entry keys and short aliases in
+your configuration. Registration reports same-name conflicts without replacing
+user commands. Reconfiguration refreshes only commands still owned by this
+plugin, and cleanup preserves subsequent user replacements.
+
+==============================================================================
+SETUP CONTRACT                                         *input-tools-lifecycle*
+                                        *input-tools-reference-setup-contract*
+
+`setup(nil)` uses defaults. Configuration must be a table; caller-owned tables
+are copied before use. Invalid configuration types do not replace live
+handlers or commands. Repeating setup must not accumulate automatic
+registrations.
+
+`disable()` retains the last successful options for `enable()`. `dispose()`
+releases UI/message ownership, cancels owned prompts, and forgets retained
+options and errors; it is safe to repeat. Invalid options leave the working
+input session unchanged. Existing command entry points remain available.
+
+==============================================================================
+HEALTH AND INSPECTION            *input-tools-reference-health-and-inspection*
+
+Health reports actionable failures and a compact result for applicable checks.
+Disabled, optional and not-yet-activated features do not warn solely because
+they are inactive. Inspection does not configure plugins, start services or
+install dependencies. Use `:InputToolsInfo` for detailed configuration and
+runtime information.
+
+Test workflow (tests/README.md): registered suites, filtering, required
+fixtures and retained failure evidence.
+
+vim:tw=78:ts=8:noet:ft=help:norl:
