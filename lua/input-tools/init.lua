@@ -179,7 +179,11 @@ local function commands()
   local actions = { "enable", "disable", "toggle", "status" }
   require("input-tools.user_command").create("InputTools", function(command)
     if command.args == "status" then
-      vim.api.nvim_echo({ { vim.inspect(M.status()) } }, false, {})
+      vim.notify(
+        vim.inspect(M.status()),
+        vim.log.levels.INFO,
+        { title = "input-tools.nvim", filetype = "lua" }
+      )
     elseif vim.tbl_contains(actions, command.args) then
       M[command.args]()
     else
